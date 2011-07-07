@@ -1,95 +1,55 @@
 package gui;
 
-/*
- * App.java requires no other files. 
- */
+import java.awt.EventQueue;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.UIManager;
+
 import java.awt.BorderLayout;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
+import javax.swing.JTextField;
+import javax.swing.JButton;
+import javax.swing.JList;
+
+import vectorir.Query;
+import vectorir.Corpus;
+
 import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Map;
 
-import javax.swing.*;
+public class App {
 
-import vectorir.Corpus;
-import vectorir.Query;
+	private JFrame frame;
+	private JTextField textField;
+	private JButton btnSearch;
+	private JPanel resultsPanel;
+	private JList list;
+	private JScrollPane scrollPane;
 
-public class App implements ActionListener {
-
-	static Corpus corpus;
-	static Query q;
-	JTextField queryTextField;
+	private static Corpus corpus;
+	private static Query q;
 
 	/**
-	 * Create the GUI and show it. For thread safety, this method should be
-	 * invoked from the event-dispatching thread.
+	 * Launch the application.
 	 * 
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
-	private void createAndShowGUI() {
-		try {
-			UIManager
-					.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		// Create and set up the window.
-		JFrame frame = new JFrame("Reuters-21578 Search");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setMinimumSize(new Dimension(500, 600));
-
-		Container pane = frame.getContentPane();
-		pane.setLayout(new BoxLayout(pane, BoxLayout.Y_AXIS));
-
-		// Top Panel
-		JPanel topPanel = new JPanel();
-		topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.X_AXIS));
-		pane.add(topPanel);
-
-		// Query Area
-		queryTextField = new JTextField(10);
-		queryTextField.setMaximumSize(new Dimension(100, 50));
-		JLabel queryTextFieldLabel = new JLabel("Query: ");
-		queryTextFieldLabel.setLabelFor(queryTextField);
-		topPanel.add(queryTextFieldLabel);
-		topPanel.add(queryTextField);
-
-		JButton queryButton = new JButton("Search");
-		topPanel.add(queryButton);
-		queryButton.addActionListener(this);
-
-		// Bottom Panel
-		JPanel bottomPanel = new JPanel(new BorderLayout());
-		pane.add(bottomPanel);
-
-		// Results Table
-		JTable table = new ResultsTable();
-		// JScrollPane scrollPane = new JScrollPane(table);
-		// bottomPanel.add(scrollPane);
-		bottomPanel.add(table);
-
-		// Display the window.
-		frame.pack();
-		frame.setVisible(true);
-
-	}
-
 	public static void main(String[] args) throws IOException,
 			ClassNotFoundException {
-
-		final App app = new App();
-
-		// Schedule a job for the event-dispatching thread:
-		// creating and showing this application's GUI.
-		javax.swing.SwingUtilities.invokeLater(new Runnable() {
+		EventQueue.invokeLater(new Runnable() {
 			public void run() {
-				app.createAndShowGUI();
+				try {
+					App window = new App();
+					window.frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 		});
 
@@ -100,14 +60,65 @@ public class App implements ActionListener {
 		corpus = (Corpus) ois.readObject();
 		System.out.println(corpus.getNumDocuments()
 				+ " documents loaded from the corpus.");
-
 	}
 
-	@Override
-	public void actionPerformed(ActionEvent e) {
+	/**
+	 * Create the application.
+	 */
+	public App() {
+		initialize();
+	}
+
+	/**
+	 * Initialize the contents of the frame.
+	 */
+	private void initialize() {
+
+		try {
+			UIManager
+					.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		frame = new JFrame();
+		frame.setBounds(100, 100, 450, 300);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+		JPanel searchPanel = new JPanel();
+		frame.getContentPane().add(searchPanel, BorderLayout.NORTH);
+
+		textField = new JTextField();
+
+		textField.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				search();
+			}
+		});
+		searchPanel.add(textField);
+		textField.setColumns(10);
+
+		btnSearch = new JButton("Search");
+		btnSearch.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				search();
+			}
+		});
+		searchPanel.add(btnSearch);
+
+		resultsPanel = new JPanel();
+		frame.getContentPane().add(resultsPanel, BorderLayout.CENTER);
+
+		list = new JList();
+
+		scrollPane = new JScrollPane(list);
+		resultsPanel.add(scrollPane);
+	}
+
+	private void search() {
 		// Instantiate a Query on the chosen Corpus.
 		q = new Query(corpus);
-		String query = queryTextField.getText();
+		String query = textField.getText();
 
 		long startTime = System.currentTimeMillis();
 
