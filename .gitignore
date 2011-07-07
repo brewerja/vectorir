@@ -1,0 +1,8 @@
+package.sh
+run.sh
+bin/
+porters-test/
+*.dat
+.classpath
+.project
+.settings/
