@@ -1,20 +1,22 @@
 package gui;
 
+import java.awt.Dimension;
 import java.awt.EventQueue;
-
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import javax.swing.UIManager;
 
 import java.awt.BorderLayout;
 import javax.swing.JTextField;
 import javax.swing.JButton;
-import javax.swing.JList;
-
+import vectorir.Document;
 import vectorir.Query;
 import vectorir.Corpus;
 
@@ -23,15 +25,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
-
 import javax.swing.JMenuBar;
+import javax.swing.event.TableModelEvent;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.JTextPane;
 
 public class App {
 
@@ -40,8 +43,7 @@ public class App {
 	private JButton btnSearch;
 	private JPanel resultsPanel;
 	private JPanel searchPanel;
-	private JList list;
-	private JScrollPane scrollPane;
+	private JScrollPane tableScrollPane;
 	private JMenu menu;
 	private JMenuItem item1;
 	private final JFileChooser fc = new JFileChooser();
@@ -49,6 +51,9 @@ public class App {
 	private static Corpus corpus;
 	private static Query q;
 	private JMenuBar menuBar;
+	private JTable table;
+	private JTextPane bodyTextPane;
+	private JScrollPane bodyTextScrollPane;
 
 	/**
 	 * Launch the application.
@@ -103,7 +108,7 @@ public class App {
 		}
 
 		frame = new JFrame("Reuters-21578 Search");
-		frame.setBounds(100, 100, 450, 300);
+		frame.setBounds(100, 100, 800, 600);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		menuBar = new JMenuBar();
@@ -167,29 +172,75 @@ public class App {
 		resultsPanel = new JPanel();
 		frame.getContentPane().add(resultsPanel, BorderLayout.CENTER);
 
-		list = new JList();
+		table = new JTable();
+		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		DefaultTableModel tableModel = new DefaultTableModel();
+		tableModel.addColumn("Doc ID");
+		tableModel.addColumn("Title");
+		tableModel.addColumn("Score");
+		table.setModel(tableModel);
+		// table.getColumnModel().getColumn(0).setPreferredWidth(50);
+		table.getColumnModel().getColumn(1).setPreferredWidth(550);
+		table.setAutoCreateRowSorter(true);
+		table.setRowSelectionAllowed(true);
 
-		scrollPane = new JScrollPane(list);
-		resultsPanel.add(scrollPane);
+		table.addMouseListener(new java.awt.event.MouseAdapter() {
+			public void mouseClicked(java.awt.event.MouseEvent e) {
+				int row = table.rowAtPoint(e.getPoint());
+				Document doc = corpus.getDocument((Integer) table.getModel()
+						.getValueAt(row, 0));
+				String dateline = doc.getDateline();
+				String body = doc.getBody();
+				bodyTextPane.setText(dateline + " " + body);
+				// TODO: This isn't working, not starting at the top.
+				JScrollBar verticalScrollBar = bodyTextScrollPane
+						.getVerticalScrollBar();
+				verticalScrollBar.setValue(verticalScrollBar.getMinimum());
+			}
+		});
+
+		tableScrollPane = new JScrollPane(table);
+		tableScrollPane.setPreferredSize(new Dimension(600, 400));
+		resultsPanel.add(tableScrollPane);
+
+		bodyTextPane = new JTextPane();
+		bodyTextPane.setPreferredSize(new Dimension(400, 400));
+
+		bodyTextScrollPane = new JScrollPane(bodyTextPane);
+		resultsPanel.add(bodyTextScrollPane);
+
 	}
 
 	private void search() {
+		DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
+		tableModel.getDataVector().removeAllElements();
+
 		String query = textField.getText();
-		if (query.equals(""))
+		if (query.equals("")) {
 			return;
+		}
 
 		// Instantiate a Query on the chosen Corpus.
 		q = new Query(corpus);
 
 		long startTime = System.currentTimeMillis();
 
+		Map<Integer, Double> docScores = new HashMap<Integer, Double>();
 		if (q.prepareQuery(query)) {
-			Map<Integer, Double> docScores = q.executeQuery();
+			docScores = q.executeQuery();
 			// Output the documents in order of similarity to the query.
 			System.out.println("Results: " + docScores);
 			long stopTime = System.currentTimeMillis();
 			System.out.println(docScores.size() + " results ("
 					+ (stopTime - startTime) / 1000.0 + " seconds)");
 		}
+
+		// Populate the table.
+		for (Map.Entry<Integer, Double> item : docScores.entrySet()) {
+			Document doc = corpus.getDocument(item.getKey());
+			Object[] rowData = { item.getKey(), doc.getTitle(), item.getValue() };
+			tableModel.addRow(rowData);
+		}
+		tableModel.fireTableChanged(new TableModelEvent(tableModel));
 	}
 }
