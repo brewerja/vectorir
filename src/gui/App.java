@@ -23,12 +23,15 @@ import vectorir.Corpus;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
+
 import javax.swing.JMenuBar;
 import javax.swing.event.TableModelEvent;
 import javax.swing.filechooser.FileFilter;
@@ -52,6 +55,7 @@ public class App {
 	private static Query q;
 	private JMenuBar menuBar;
 	private JTable table;
+	private CustomTableModel tableModel;
 	private JTextPane bodyTextPane;
 	private JScrollPane bodyTextScrollPane;
 
@@ -108,7 +112,7 @@ public class App {
 		}
 
 		frame = new JFrame("Reuters-21578 Search");
-		frame.setBounds(100, 100, 800, 600);
+		frame.setBounds(200, 100, 1050, 550);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		menuBar = new JMenuBar();
@@ -172,30 +176,37 @@ public class App {
 		resultsPanel = new JPanel();
 		frame.getContentPane().add(resultsPanel, BorderLayout.CENTER);
 
-		table = new JTable();
+		Object headers[] = { "Doc ID", "Title", "Score" };
+		tableModel = new CustomTableModel(null, headers);
+		table = new JTable(tableModel);
+
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		DefaultTableModel tableModel = new DefaultTableModel();
-		tableModel.addColumn("Doc ID");
-		tableModel.addColumn("Title");
-		tableModel.addColumn("Score");
-		table.setModel(tableModel);
-		// table.getColumnModel().getColumn(0).setPreferredWidth(50);
 		table.getColumnModel().getColumn(1).setPreferredWidth(550);
-		table.setAutoCreateRowSorter(true);
+		// table.setAutoCreateRowSorter(false);
 		table.setRowSelectionAllowed(true);
 
 		table.addMouseListener(new java.awt.event.MouseAdapter() {
 			public void mouseClicked(java.awt.event.MouseEvent e) {
 				int row = table.rowAtPoint(e.getPoint());
-				Document doc = corpus.getDocument((Integer) table.getModel()
-						.getValueAt(row, 0));
-				String dateline = doc.getDateline();
-				String body = doc.getBody();
-				bodyTextPane.setText(dateline + " " + body);
-				// TODO: This isn't working, not starting at the top.
-				JScrollBar verticalScrollBar = bodyTextScrollPane
-						.getVerticalScrollBar();
-				verticalScrollBar.setValue(verticalScrollBar.getMinimum());
+				displayDocument((Integer) table.getModel().getValueAt(row, 0));
+			}
+		});
+		table.addKeyListener(new KeyListener() {
+
+			@Override
+			public void keyTyped(KeyEvent e) {
+				// TODO Auto-generated method stub
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				int row = table.getSelectedRow();
+				displayDocument((Integer) table.getModel().getValueAt(row, 0));
+			}
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+				// TODO Auto-generated method stub
 			}
 		});
 
@@ -211,14 +222,23 @@ public class App {
 
 	}
 
-	private void search() {
-		DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
-		tableModel.getDataVector().removeAllElements();
+	private void displayDocument(int docId) {
+		Document doc = corpus.getDocument(docId);
+		String dateline = doc.getDateline();
+		String body = doc.getBody();
+		bodyTextPane.setText(dateline + " " + body);
+		// TODO: This isn't working, not starting at the top.
+		JScrollBar verticalScrollBar = bodyTextScrollPane
+				.getVerticalScrollBar();
+		verticalScrollBar.setValue(verticalScrollBar.getMinimum());
+	}
 
+	private void search() {
+
+		// Check for an empty query.
 		String query = textField.getText();
-		if (query.equals("")) {
+		if (query.equals(""))
 			return;
-		}
 
 		// Instantiate a Query on the chosen Corpus.
 		q = new Query(corpus);
@@ -229,18 +249,34 @@ public class App {
 		if (q.prepareQuery(query)) {
 			docScores = q.executeQuery();
 			// Output the documents in order of similarity to the query.
-			System.out.println("Results: " + docScores);
+			// System.out.println("Results: " + docScores);
 			long stopTime = System.currentTimeMillis();
 			System.out.println(docScores.size() + " results ("
 					+ (stopTime - startTime) / 1000.0 + " seconds)");
 		}
 
 		// Populate the table.
+		tableModel.getDataVector().removeAllElements();
 		for (Map.Entry<Integer, Double> item : docScores.entrySet()) {
 			Document doc = corpus.getDocument(item.getKey());
 			Object[] rowData = { item.getKey(), doc.getTitle(), item.getValue() };
 			tableModel.addRow(rowData);
 		}
 		tableModel.fireTableChanged(new TableModelEvent(tableModel));
+	}
+
+	class CustomTableModel extends DefaultTableModel {
+
+		private static final long serialVersionUID = -4979601734379067486L;
+
+		public CustomTableModel(Object rowData[][], Object columnNames[]) {
+			super(rowData, columnNames);
+		}
+
+		public Class<? extends Object> getColumnClass(int col) {
+			Vector<?> v = (Vector<?>) dataVector.elementAt(0);
+			return v.elementAt(col).getClass();
+		}
+
 	}
 }
