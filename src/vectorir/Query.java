@@ -231,7 +231,7 @@ public class Query {
 					docScores.put(docId, 0.0);
 				idf = Math.log(((double) corpus.getNumDocuments())
 						/ (1 + corpus.getTerm(termString).getDocFreq()));
-				System.out.println(termString + " " + idf);
+				//System.out.println(termString + " " + idf);
 			}
 
 			System.out.println("'" + termString + "'" + " found in "

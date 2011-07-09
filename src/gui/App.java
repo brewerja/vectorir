@@ -277,6 +277,12 @@ public class App {
 			Vector<?> v = (Vector<?>) dataVector.elementAt(0);
 			return v.elementAt(col).getClass();
 		}
+		
+	    @Override
+	    public boolean isCellEditable(int row, int column) {
+	       //all cells false
+	       return false;
+	    }
 
 	}
 }
