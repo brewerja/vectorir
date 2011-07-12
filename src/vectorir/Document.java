@@ -92,4 +92,8 @@ public class Document implements java.io.Serializable {
 		this.tokens.clear();
 	}
 
+	public Map<String, Double> getWeights() {
+		return weights;
+	}
+
 }
