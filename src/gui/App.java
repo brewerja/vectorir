@@ -193,6 +193,7 @@ public class App {
 		table.getColumnModel().getColumn(1).setPreferredWidth(550);
 		// table.setAutoCreateRowSorter(false);
 		table.setRowSelectionAllowed(true);
+		table.setColumnSelectionAllowed(false);
 
 		table.addMouseListener(new java.awt.event.MouseAdapter() {
 			public void mouseClicked(java.awt.event.MouseEvent e) {
@@ -211,6 +212,8 @@ public class App {
 			@Override
 			public void keyReleased(KeyEvent e) {
 				int row = table.getSelectedRow();
+				if (row == -1)
+					return;
 				int docId = (Integer) table.getModel().getValueAt(row, 0);
 				char c = e.getKeyChar();
 				if (c == 'r') {
@@ -249,15 +252,15 @@ public class App {
 		bodyTextScrollPane = new JScrollPane(bodyTextPane);
 
 		// Split Pane
-		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tableScrollPane,
-				bodyTextScrollPane);
-		//splitPane.setOneTouchExpandable(true);
+		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+				tableScrollPane, bodyTextScrollPane);
+		// splitPane.setOneTouchExpandable(true);
 		splitPane.setDividerLocation(600);
 		frame.getContentPane().add(splitPane, BorderLayout.CENTER);
 		// Provide minimum sizes for the two components in the split pane
-		//Dimension minimumSize = new Dimension(100, 50);
-		//listScrollPane.setMinimumSize(minimumSize);
-		//pictureScrollPane.setMinimumSize(minimumSize);
+		// Dimension minimumSize = new Dimension(100, 50);
+		// listScrollPane.setMinimumSize(minimumSize);
+		// pictureScrollPane.setMinimumSize(minimumSize);
 
 	}
 
