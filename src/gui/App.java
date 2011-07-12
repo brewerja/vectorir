@@ -1,5 +1,7 @@
 package gui;
 
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import javax.swing.JFileChooser;
@@ -7,7 +9,6 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
@@ -29,6 +30,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Vector;
 
@@ -36,6 +38,7 @@ import javax.swing.JMenuBar;
 import javax.swing.event.TableModelEvent;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JTextPane;
 
@@ -46,6 +49,7 @@ public class App {
 	private JButton btnSearch;
 	private JPanel resultsPanel;
 	private JPanel searchPanel;
+	private JPanel documentPanel;
 	private JScrollPane tableScrollPane;
 	private JMenu menu;
 	private JMenuItem item1;
@@ -58,6 +62,9 @@ public class App {
 	private CustomTableModel tableModel;
 	private JTextPane bodyTextPane;
 	private JScrollPane bodyTextScrollPane;
+	private MyTableCellRenderer cellRenderer = new MyTableCellRenderer();
+	private static HashSet<Integer> relevantDocs = new HashSet<Integer>();
+	private static HashSet<Integer> nonRelevantDocs = new HashSet<Integer>();
 
 	/**
 	 * Launch the application.
@@ -120,7 +127,6 @@ public class App {
 
 		// Build the first menu.
 		menu = new JMenu("Corpus");
-		menu.setMnemonic(KeyEvent.VK_A);
 		menu.getAccessibleContext().setAccessibleDescription("Corpus Menu");
 		menuBar.add(menu);
 
@@ -152,19 +158,21 @@ public class App {
 				"Load a new corpus file into memory.");
 		menu.add(item1);
 
+		// Search Panel
 		searchPanel = new JPanel();
 		frame.getContentPane().add(searchPanel, BorderLayout.NORTH);
 
+		// Query Entry Field
 		textField = new JTextField();
-
 		textField.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				search();
 			}
 		});
-		searchPanel.add(textField);
 		textField.setColumns(10);
+		searchPanel.add(textField);
 
+		// Search button
 		btnSearch = new JButton("Search");
 		btnSearch.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -173,12 +181,17 @@ public class App {
 		});
 		searchPanel.add(btnSearch);
 
+		// Results Listing Panel
 		resultsPanel = new JPanel();
-		frame.getContentPane().add(resultsPanel, BorderLayout.CENTER);
+		frame.getContentPane().add(resultsPanel, BorderLayout.WEST);
 
 		Object headers[] = { "Doc ID", "Title", "Score" };
 		tableModel = new CustomTableModel(null, headers);
 		table = new JTable(tableModel);
+
+		for (int i = 0; i < 3; i++) {
+			table.getColumnModel().getColumn(i).setCellRenderer(cellRenderer);
+		}
 
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		table.getColumnModel().getColumn(1).setPreferredWidth(550);
@@ -191,6 +204,7 @@ public class App {
 				displayDocument((Integer) table.getModel().getValueAt(row, 0));
 			}
 		});
+
 		table.addKeyListener(new KeyListener() {
 
 			@Override
@@ -201,7 +215,27 @@ public class App {
 			@Override
 			public void keyReleased(KeyEvent e) {
 				int row = table.getSelectedRow();
-				displayDocument((Integer) table.getModel().getValueAt(row, 0));
+				int docId = (Integer) table.getModel().getValueAt(row, 0);
+				displayDocument(docId);
+				char c = e.getKeyChar();
+				if (c == 'r') {
+					relevantDocs.add(docId);
+					nonRelevantDocs.remove(docId);
+					tableModel.fireTableRowsUpdated(row, row);
+				} else if (c == 'n') {
+					nonRelevantDocs.add(docId);
+					relevantDocs.remove(docId);
+					tableModel.fireTableRowsUpdated(row, row);
+				} else if (c == 'u') {
+					relevantDocs.remove(docId);
+					nonRelevantDocs.remove(docId);
+					tableModel.fireTableRowsUpdated(row, row);
+				} else if (c == 'j') {
+					// Move down
+					tableModel.fireTableRowsUpdated(row, row);
+				} else if (c == 'k') {
+					// Move up
+				}
 			}
 
 			@Override
@@ -217,20 +251,21 @@ public class App {
 		bodyTextPane = new JTextPane();
 		bodyTextPane.setPreferredSize(new Dimension(400, 400));
 
+		// Results Listing Panel
+		documentPanel = new JPanel();
+		frame.getContentPane().add(documentPanel, BorderLayout.EAST);
+
 		bodyTextScrollPane = new JScrollPane(bodyTextPane);
-		resultsPanel.add(bodyTextScrollPane);
+		documentPanel.add(bodyTextScrollPane);
 
 	}
 
 	private void displayDocument(int docId) {
 		Document doc = corpus.getDocument(docId);
 		String dateline = doc.getDateline();
-		String body = doc.getBody();
+		String body = doc.getBody().replaceAll("\\\\\"", "\\\"");
 		bodyTextPane.setText(dateline + " " + body);
-		// TODO: This isn't working, not starting at the top.
-		JScrollBar verticalScrollBar = bodyTextScrollPane
-				.getVerticalScrollBar();
-		verticalScrollBar.setValue(verticalScrollBar.getMinimum());
+		bodyTextPane.setCaretPosition(0);
 	}
 
 	private void search() {
@@ -277,12 +312,36 @@ public class App {
 			Vector<?> v = (Vector<?>) dataVector.elementAt(0);
 			return v.elementAt(col).getClass();
 		}
-		
-	    @Override
-	    public boolean isCellEditable(int row, int column) {
-	       //all cells false
-	       return false;
-	    }
 
+		@Override
+		public boolean isCellEditable(int row, int column) {
+			// all cells false
+			return false;
+		}
+
+	}
+
+	static class MyTableCellRenderer extends DefaultTableCellRenderer {
+
+		private static final long serialVersionUID = 5464571011029151373L;
+
+		@Override
+		public Component getTableCellRendererComponent(JTable table,
+				Object value, boolean isSelected, boolean hasFocus, int row,
+				int column) {
+			Component c = super.getTableCellRendererComponent(table, value,
+					isSelected, hasFocus, row, column);
+
+			int docId = (Integer) table.getModel().getValueAt(row, 0);
+
+			if (nonRelevantDocs.contains(docId))
+				c.setForeground(Color.RED);
+			else if (relevantDocs.contains(docId))
+				c.setForeground(Color.GREEN);
+			else {
+				c.setForeground(null);
+			}
+			return c;
+		}
 	}
 }
