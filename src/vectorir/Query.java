@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -78,6 +79,9 @@ public class Query {
 	private int numEmptyTokens;
 	private Map<Integer, Integer> phrasePositions;
 	private String[] queryTokens = null;
+	private Map<String, Double> queryVector = new HashMap<String, Double>();
+	private HashSet<Integer> relevantDocs = new HashSet<Integer>();
+	private HashSet<Integer> nonRelevantDocs = new HashSet<Integer>();
 
 	public Query(Corpus c) {
 		this.corpus = c;
@@ -143,7 +147,6 @@ public class Query {
 		}
 
 		Map<Integer, Double> docScores = new HashMap<Integer, Double>();
-		Map<String, Double> queryVector = new HashMap<String, Double>();
 		final double a = 0.4;
 		double ntf_query = a + (1 - a);
 		double queryDistance = 0.0;
@@ -242,7 +245,7 @@ public class Query {
 			queryVector.put(termString, weight);
 			queryDistance += weight * weight;
 		} // END for (int i = 0; i < queryTerms.length; i++)
-
+				
 		queryDistance = Math.sqrt(queryDistance);
 
 		// For each of the documents where a query term is found, calculate it's
@@ -298,6 +301,30 @@ public class Query {
 		}
 
 		return result;
+	}
+
+	public HashSet<Integer> getRelevantDocs() {
+		return relevantDocs;
+	}
+
+	public void addRelevantDocs(int docId) {
+		relevantDocs.add(docId);
+	}
+
+	public HashSet<Integer> getNonRelevantDocs() {
+		return nonRelevantDocs;
+	}
+
+	public void addNonRelevantDocs(int docId) {
+		nonRelevantDocs.add(docId);
+	}
+
+	public void removeRelevantDocs(int docId) {
+		relevantDocs.remove(docId);
+	}
+
+	public void removeNonRelevantDocs(int docId) {
+		nonRelevantDocs.remove(docId);
 	}
 
 }

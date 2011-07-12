@@ -30,7 +30,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Vector;
 
@@ -62,8 +61,7 @@ public class App {
 	private JScrollPane bodyTextScrollPane;
 	private MyTableCellRenderer cellRenderer = new MyTableCellRenderer();
 	private JSplitPane splitPane;
-	private static HashSet<Integer> relevantDocs = new HashSet<Integer>();
-	private static HashSet<Integer> nonRelevantDocs = new HashSet<Integer>();
+	
 
 	/**
 	 * Launch the application.
@@ -217,16 +215,16 @@ public class App {
 				int docId = (Integer) table.getModel().getValueAt(row, 0);
 				char c = e.getKeyChar();
 				if (c == 'r') {
-					relevantDocs.add(docId);
-					nonRelevantDocs.remove(docId);
+					q.addRelevantDocs(docId);
+					q.removeNonRelevantDocs(docId);
 					tableModel.fireTableRowsUpdated(row, row);
 				} else if (c == 'n') {
-					nonRelevantDocs.add(docId);
-					relevantDocs.remove(docId);
+					q.addNonRelevantDocs(docId);
+					q.removeRelevantDocs(docId);
 					tableModel.fireTableRowsUpdated(row, row);
 				} else if (c == 'u') {
-					relevantDocs.remove(docId);
-					nonRelevantDocs.remove(docId);
+					q.removeRelevantDocs(docId);
+					q.removeNonRelevantDocs(docId);
 					tableModel.fireTableRowsUpdated(row, row);
 				} else if (c == 'j' && row != table.getRowCount() - 1) {
 					// Move down
@@ -338,9 +336,9 @@ public class App {
 
 			int docId = (Integer) table.getModel().getValueAt(row, 0);
 
-			if (nonRelevantDocs.contains(docId))
+			if (q.getNonRelevantDocs().contains(docId))
 				c.setForeground(Color.RED);
-			else if (relevantDocs.contains(docId))
+			else if (q.getRelevantDocs().contains(docId))
 				c.setForeground(Color.GREEN);
 			else {
 				c.setForeground(null);
