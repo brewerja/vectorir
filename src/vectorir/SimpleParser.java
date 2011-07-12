@@ -96,8 +96,10 @@ public class SimpleParser extends DefaultHandler {
 		else if (qName.equals("DATELINE"))
 			this.currentDocument.setDateline(sb.toString().trim());
 		else if (qName.equals("BODY")) {
-			this.currentDocument.setBody(sb.toString().replaceAll("\\s+", " "));
-
+			// Remove excess white space and chop anything after the final period.
+			String bodyText = sb.toString().replaceAll("\\s+", " ");
+			this.currentDocument.setBody(bodyText.substring(0, bodyText.lastIndexOf(".") + 1));
+			
 			String[] tokens = sb.toString()
 			// Replace all dashes and slashes with white space.
 					.replaceAll("[\\-\\/]", " ")
@@ -112,7 +114,6 @@ public class SimpleParser extends DefaultHandler {
 			ArrayList<String> tokenList = new ArrayList<String>();
 			for (String s : tokens) {
 				// if (!corpus.stopWord(s))
-				if (!s.equals("reuter"))
 					tokenList.add(s);
 			}
 

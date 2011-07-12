@@ -2,7 +2,6 @@ package gui;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.EventQueue;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -10,6 +9,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.UIManager;
@@ -47,9 +47,7 @@ public class App {
 	private JFrame frame;
 	private JTextField textField;
 	private JButton btnSearch;
-	private JPanel resultsPanel;
 	private JPanel searchPanel;
-	private JPanel documentPanel;
 	private JScrollPane tableScrollPane;
 	private JMenu menu;
 	private JMenuItem item1;
@@ -63,6 +61,7 @@ public class App {
 	private JTextPane bodyTextPane;
 	private JScrollPane bodyTextScrollPane;
 	private MyTableCellRenderer cellRenderer = new MyTableCellRenderer();
+	private JSplitPane splitPane;
 	private static HashSet<Integer> relevantDocs = new HashSet<Integer>();
 	private static HashSet<Integer> nonRelevantDocs = new HashSet<Integer>();
 
@@ -118,19 +117,19 @@ public class App {
 			e.printStackTrace();
 		}
 
+		// Frame (Application Window)
 		frame = new JFrame("Reuters-21578 Search");
 		frame.setBounds(200, 100, 1050, 550);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+		// Menu Bar
 		menuBar = new JMenuBar();
 		frame.setJMenuBar(menuBar);
 
-		// Build the first menu.
 		menu = new JMenu("Corpus");
 		menu.getAccessibleContext().setAccessibleDescription("Corpus Menu");
 		menuBar.add(menu);
 
-		// a group of JMenuItems
 		item1 = new JMenuItem("Select Corpus", KeyEvent.VK_T);
 		item1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -181,10 +180,7 @@ public class App {
 		});
 		searchPanel.add(btnSearch);
 
-		// Results Listing Panel
-		resultsPanel = new JPanel();
-		frame.getContentPane().add(resultsPanel, BorderLayout.WEST);
-
+		// JTable
 		Object headers[] = { "Doc ID", "Title", "Score" };
 		tableModel = new CustomTableModel(null, headers);
 		table = new JTable(tableModel);
@@ -247,18 +243,21 @@ public class App {
 		});
 
 		tableScrollPane = new JScrollPane(table);
-		tableScrollPane.setPreferredSize(new Dimension(600, 400));
-		resultsPanel.add(tableScrollPane);
 
+		// Document Display
 		bodyTextPane = new JTextPane();
-		bodyTextPane.setPreferredSize(new Dimension(400, 400));
-
-		// Results Listing Panel
-		documentPanel = new JPanel();
-		frame.getContentPane().add(documentPanel, BorderLayout.EAST);
-
 		bodyTextScrollPane = new JScrollPane(bodyTextPane);
-		documentPanel.add(bodyTextScrollPane);
+
+		// Split Pane
+		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tableScrollPane,
+				bodyTextScrollPane);
+		//splitPane.setOneTouchExpandable(true);
+		splitPane.setDividerLocation(600);
+		frame.getContentPane().add(splitPane, BorderLayout.CENTER);
+		// Provide minimum sizes for the two components in the split pane
+		//Dimension minimumSize = new Dimension(100, 50);
+		//listScrollPane.setMinimumSize(minimumSize);
+		//pictureScrollPane.setMinimumSize(minimumSize);
 
 	}
 
