@@ -7,6 +7,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -30,6 +31,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Vector;
 
@@ -61,7 +63,9 @@ public class App {
 	private JScrollPane bodyTextScrollPane;
 	private MyTableCellRenderer cellRenderer = new MyTableCellRenderer();
 	private JSplitPane splitPane;
-	
+	private String queryText = "";
+	private HashSet<Integer> formerRelevantDocs = new HashSet<Integer>();
+	private HashSet<Integer> formerNonRelevantDocs = new HashSet<Integer>();
 
 	/**
 	 * Launch the application.
@@ -83,6 +87,7 @@ public class App {
 		});
 
 		deserializeCorpus("corpus.dat");
+		q = new Query(corpus);
 	}
 
 	/**
@@ -270,36 +275,69 @@ public class App {
 		bodyTextPane.setCaretPosition(0);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void search() {
 
-		// Check for an empty query.
-		String query = textField.getText();
-		if (query.equals(""))
+		// Check to see if losing new feedback information.
+		if (!queryText.equals(textField.getText())
+				&& !formerRelevantDocs.equals(q.getRelevantDocs())
+				&& !formerNonRelevantDocs.equals(q.getNonRelevantDocs())) {
+			int n = JOptionPane
+					.showConfirmDialog(
+							frame,
+							"You have given relevance feedback on the current result set. Do you wish to run a new query and discard the feedback?",
+							"New Query?", JOptionPane.YES_NO_OPTION);
+			if (n == 0) { // YES
+				q = new Query(corpus);
+			} else
+				return;
+		}
+
+		// Check for an empty query
+		if (textField.getText().equals(""))
 			return;
+		// Check for an unchanged query, with no new feedback
+		else if (formerRelevantDocs.equals(q.getRelevantDocs())
+				&& formerNonRelevantDocs.equals(q.getNonRelevantDocs())
+				&& queryText.equals(textField.getText()))
+			return;
+		// Either a new query entirely or the same query with new feedback
+		else {
+			long startTime = System.currentTimeMillis();
+			Map<Integer, Double> docScores = new HashMap<Integer, Double>();
 
-		// Instantiate a Query on the chosen Corpus.
-		q = new Query(corpus);
+			// If the query is unchanged and has made it this far, it's
+			// feedback, otherwise it's a new query.
+			if (queryText.equals(textField.getText())) {
+				q.rocchio();
+			} else {
+				queryText = textField.getText();
+				q = new Query(corpus);
+				if (q.prepareQuery(queryText)) {
+					q.executeQuery();
+				}
+			}
 
-		long startTime = System.currentTimeMillis();
-
-		Map<Integer, Double> docScores = new HashMap<Integer, Double>();
-		if (q.prepareQuery(query)) {
-			docScores = q.executeQuery();
+			docScores = q.getDocScores();
 			// Output the documents in order of similarity to the query.
 			// System.out.println("Results: " + docScores);
 			long stopTime = System.currentTimeMillis();
 			System.out.println(docScores.size() + " results ("
 					+ (stopTime - startTime) / 1000.0 + " seconds)");
-		}
 
-		// Populate the table.
-		tableModel.getDataVector().removeAllElements();
-		for (Map.Entry<Integer, Double> item : docScores.entrySet()) {
-			Document doc = corpus.getDocument(item.getKey());
-			Object[] rowData = { item.getKey(), doc.getTitle(), item.getValue() };
-			tableModel.addRow(rowData);
+			// Populate the table.
+			tableModel.getDataVector().removeAllElements();
+			for (Map.Entry<Integer, Double> item : docScores.entrySet()) {
+				Document doc = corpus.getDocument(item.getKey());
+				Object[] rowData = { item.getKey(), doc.getTitle(),
+						item.getValue() };
+				tableModel.addRow(rowData);
+			}
+			tableModel.fireTableChanged(new TableModelEvent(tableModel));
+			
+			formerRelevantDocs = (HashSet<Integer>) q.getRelevantDocs().clone();
+			formerNonRelevantDocs = (HashSet<Integer>) q.getNonRelevantDocs().clone();
 		}
-		tableModel.fireTableChanged(new TableModelEvent(tableModel));
 	}
 
 	class CustomTableModel extends DefaultTableModel {

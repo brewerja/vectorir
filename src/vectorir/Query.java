@@ -49,11 +49,11 @@ public class Query {
 			long startTime = System.currentTimeMillis();
 
 			if (q.prepareQuery(query)) {
-				Map<Integer, Double> docScores = q.executeQuery();
+				q.executeQuery();
 				// Output the documents in order of similarity to the query.
-				System.out.println("Results: " + sortByValue(docScores));
+				System.out.println("Results: " + q.docScores);
 				long stopTime = System.currentTimeMillis();
-				System.out.println(docScores.size() + " results ("
+				System.out.println(q.docScores.size() + " results ("
 						+ (stopTime - startTime) / 1000.0 + " seconds)");
 			}
 
@@ -82,6 +82,9 @@ public class Query {
 	private Map<String, Double> queryVector = new HashMap<String, Double>();
 	private HashSet<Integer> relevantDocs = new HashSet<Integer>();
 	private HashSet<Integer> nonRelevantDocs = new HashSet<Integer>();
+	private String[] queryTerms;
+	private Map<Integer, Double> docScores = new HashMap<Integer, Double>();
+	private double queryDistance = 0.0;
 
 	public Query(Corpus c) {
 		this.corpus = c;
@@ -134,10 +137,10 @@ public class Query {
 			return true;
 	}
 
-	public Map<Integer, Double> executeQuery() {
+	public void executeQuery() {
 		// Convert query tokens to terms using the stemming algorithm.
 		// This is done independent of phrasing.
-		String[] queryTerms = new String[queryTokens.length - numEmptyTokens];
+		queryTerms = new String[queryTokens.length - numEmptyTokens];
 		Stemmer stemmer = new Stemmer();
 		for (int i = 0; i < queryTerms.length; i++) {
 			String q = queryTokens[i + numEmptyTokens];
@@ -146,10 +149,9 @@ public class Query {
 			queryTerms[i] = stemmer.toString();
 		}
 
-		Map<Integer, Double> docScores = new HashMap<Integer, Double>();
 		final double a = 0.4;
 		double ntf_query = a + (1 - a);
-		double queryDistance = 0.0;
+		
 
 		// For each "true" term, initialize docScores entries for entries in the
 		// term's postings and calculate query tf-idf values.
@@ -247,22 +249,15 @@ public class Query {
 		} // END for (int i = 0; i < queryTerms.length; i++)
 
 		queryDistance = Math.sqrt(queryDistance);
-
+		cosineScore();
+	}
+	
+	public void cosineScore() {
 		// For each of the documents where a query term is found, calculate it's
 		// cosine similarity to the query vector.
 		for (Integer docId : docScores.keySet()) {
 			double dotproduct = 0.0;
-			for (int i = 0; i < queryTerms.length; i++) {
-				String term;
-				if (phrasePositions.containsKey(i)) {
-					StringBuilder sb = new StringBuilder();
-					for (int t = i; t <= phrasePositions.get(i); t++)
-						sb.append(queryTerms[t]);
-					term = sb.toString();
-					i = phrasePositions.get(i);
-				} else
-					term = queryTerms[i];
-
+			for (String term : queryVector.keySet()) {
 				if (corpus.getTerm(term).getPostings().containsKey(docId))
 					dotproduct += queryVector.get(term)
 							* corpus.getDocument(docId).getWeight(term);
@@ -272,7 +267,8 @@ public class Query {
 			docScores.put(docId, cosineSim);
 		}
 
-		return sortByValue(docScores);
+		docScores = sortByValue(docScores);
+		System.out.println(docScores);
 	}
 
 	private static Map<Integer, Double> sortByValue(Map<Integer, Double> map) {
@@ -382,13 +378,31 @@ public class Query {
 							* nonRelevantDocsVector.get(termString));
 		
 		// Final summation to form the modified queryVector.
+		queryDistance = 0.0;
 		for (String termString : queryVector.keySet()) {
 			double value = queryVector.get(termString)
 					+ relevantDocsVector.get(termString)
 					- nonRelevantDocsVector.get(termString);
-			if (value > 0)
-				queryVector.put(termString, value);
+			if (value < 0.0)
+				value = 0.0;
+			queryVector.put(termString, value);
+			queryDistance += value*value;
 		}
+		queryDistance = Math.sqrt(queryDistance);
+		phrasePositions.clear();
+		
+		docScores.clear();
+		for (String termString : queryVector.keySet()) {
+			for (Integer docId : corpus.getTerm(termString).getPostings().keySet()) {
+				docScores.put(docId, 0.0);
+			}
+		}
+		
+		cosineScore();
+	}
+
+	public Map<Integer, Double> getDocScores() {
+		return docScores;
 	}
 
 }
