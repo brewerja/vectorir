@@ -216,7 +216,6 @@ public class App {
 			public void keyReleased(KeyEvent e) {
 				int row = table.getSelectedRow();
 				int docId = (Integer) table.getModel().getValueAt(row, 0);
-				displayDocument(docId);
 				char c = e.getKeyChar();
 				if (c == 'r') {
 					relevantDocs.add(docId);
@@ -230,12 +229,15 @@ public class App {
 					relevantDocs.remove(docId);
 					nonRelevantDocs.remove(docId);
 					tableModel.fireTableRowsUpdated(row, row);
-				} else if (c == 'j') {
+				} else if (c == 'j' && row != table.getRowCount() - 1) {
 					// Move down
-					tableModel.fireTableRowsUpdated(row, row);
-				} else if (c == 'k') {
-					// Move up
+					table.setRowSelectionInterval(row + 1, row + 1);
+					docId = (Integer) table.getModel().getValueAt(row + 1, 0);
+				} else if (c == 'k' && row != 0) {
+					table.setRowSelectionInterval(row - 1, row - 1);
+					docId = (Integer) table.getModel().getValueAt(row - 1, 0);
 				}
+				displayDocument(docId);
 			}
 
 			@Override
