@@ -340,6 +340,7 @@ public class App {
 				tableModel.addRow(rowData);
 			}
 			tableModel.fireTableChanged(new TableModelEvent(tableModel));
+			displayDocument((Integer) table.getModel().getValueAt(0, 0));
 
 			// Store the feedback to test for changes later.
 			formerRelevantDocs = (HashSet<Integer>) q.getRelevantDocs().clone();
