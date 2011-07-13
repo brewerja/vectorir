@@ -2,7 +2,7 @@ package gui;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.EventQueue;
+import java.awt.Cursor;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -43,10 +43,11 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JTextPane;
 
-public class App {
+public class App extends JFrame {
+
+	private static final long serialVersionUID = 4197441993154537981L;
 
 	// GUI Components
-	private JFrame frame;
 	private JTextField textField;
 	private JButton buttonSearch;
 	private JPanel searchPanel;
@@ -62,6 +63,10 @@ public class App {
 	private JMenuBar menuBar;
 	private final JFileChooser fc = new JFileChooser();
 
+	public final static Cursor busyCursor = Cursor
+			.getPredefinedCursor(Cursor.WAIT_CURSOR);
+	public final static Cursor defaultCursor = Cursor.getDefaultCursor();
+
 	// Search Components
 	private static Corpus corpus;
 	private static Query q;
@@ -72,26 +77,25 @@ public class App {
 	private JMenuItem item2_1;
 
 	// Launch the application.
-	public static void main(String[] args) throws IOException,
-			ClassNotFoundException {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					App window = new App();
-					window.frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-
-		// Load the corpus into memory and instantiate a Query object.
-		deserializeCorpus("corpus.dat");
+	public static void main(String[] args) {
+		new App();
 	}
 
 	// Create the application.
 	public App() {
 		initialize();
+		setVisible(true);
+
+		// Load the corpus into memory and instantiate a Query object.
+		setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+		try {
+			deserializeCorpus("corpus.dat");
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		setCursor(Cursor.getDefaultCursor());
 	}
 
 	// Initialize the contents of the frame.
@@ -105,13 +109,13 @@ public class App {
 		}
 
 		// Frame (Application Window)
-		frame = new JFrame("Reuters-21578 Search");
-		frame.setBounds(200, 100, 1050, 550);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setTitle("Reuters-21578 Search");
+		setBounds(200, 100, 1050, 550);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		// Menu Bar
 		menuBar = new JMenuBar();
-		frame.setJMenuBar(menuBar);
+		setJMenuBar(menuBar);
 
 		menu = new JMenu("Corpus");
 		menu.getAccessibleContext().setAccessibleDescription("Corpus Menu");
@@ -121,13 +125,16 @@ public class App {
 		item1_1.setToolTipText("Load a new corpus file into memory.");
 		item1_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+
 				FileFilter filter = new FileNameExtensionFilter(
 						"Corpus Files (*.dat)", "dat");
 				fc.setFileFilter(filter);
 
+				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				int returnVal = fc.showOpenDialog(fc);
 
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
+
 					File file = fc.getSelectedFile();
 					try {
 						deserializeCorpus(file.getPath());
@@ -142,6 +149,7 @@ public class App {
 						e1.printStackTrace();
 					}
 				}
+				setCursor(Cursor.getDefaultCursor());
 			}
 		});
 		menu.add(item1_1);
@@ -156,7 +164,7 @@ public class App {
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane
 						.showMessageDialog(
-								frame,
+								App.this,
 								"This application implements a vector space model using normalized tf-idf "
 										+ "weighting and cosine similarity to allow queries on the well-known "
 										+ "Reuters-21578 dataset.\n\nMultiple word phrases may be used in search. To "
@@ -172,7 +180,7 @@ public class App {
 
 		// Search Panel
 		searchPanel = new JPanel();
-		frame.getContentPane().add(searchPanel, BorderLayout.NORTH);
+		getContentPane().add(searchPanel, BorderLayout.NORTH);
 
 		// Query Entry Field
 		textField = new JTextField();
@@ -267,7 +275,10 @@ public class App {
 					// Move up.
 					table.setRowSelectionInterval(row - 1, row - 1);
 					docId = (Integer) table.getModel().getValueAt(row - 1, 0);
+				} else if (c == 's') {
+					search();
 				}
+
 				displayDocument(docId);
 			}
 
@@ -280,17 +291,18 @@ public class App {
 
 		// Document Display
 		bodyTextPane = new JTextPane();
+		bodyTextPane.setEditable(false);
 		bodyTextScrollPane = new JScrollPane(bodyTextPane);
 
 		// Split Pane
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
 				tableScrollPane, bodyTextScrollPane);
 		splitPane.setDividerLocation(600);
-		frame.getContentPane().add(splitPane, BorderLayout.CENTER);
+		getContentPane().add(splitPane, BorderLayout.CENTER);
 
 	}
 
-	private static void deserializeCorpus(String file) throws IOException,
+	private void deserializeCorpus(String file) throws IOException,
 			ClassNotFoundException {
 		// Deserialize the stored Corpus object, loading into memory.
 		System.out.println("Deserializing corpus...");
@@ -326,7 +338,7 @@ public class App {
 						.equals(q.getNonRelevantDocs()))) {
 			int n = JOptionPane
 					.showConfirmDialog(
-							frame,
+							App.this,
 							"You have given relevance feedback on the current result set. Do you wish to run a new query "
 									+ "and discard the feedback?",
 							"New Query?", JOptionPane.YES_NO_OPTION);
@@ -355,7 +367,7 @@ public class App {
 				if (q.getRelevantDocs().isEmpty()) {
 					JOptionPane
 							.showMessageDialog(
-									frame,
+									App.this,
 									"If there are no relevant documents in the current result set, please try a new query.");
 					return;
 				}
