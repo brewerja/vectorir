@@ -58,7 +58,7 @@ public class App {
 	private JScrollPane bodyTextScrollPane;
 	private JSplitPane splitPane;
 	private JMenu menu;
-	private JMenuItem item1;
+	private JMenuItem item1_1;
 	private JMenuBar menuBar;
 	private final JFileChooser fc = new JFileChooser();
 
@@ -68,6 +68,8 @@ public class App {
 	private String queryText = "";
 	private HashSet<Integer> formerRelevantDocs = new HashSet<Integer>();
 	private HashSet<Integer> formerNonRelevantDocs = new HashSet<Integer>();
+	private JMenu menu2;
+	private JMenuItem item2_1;
 
 	// Launch the application.
 	public static void main(String[] args) throws IOException,
@@ -85,7 +87,6 @@ public class App {
 
 		// Load the corpus into memory and instantiate a Query object.
 		deserializeCorpus("corpus.dat");
-		q = new Query(corpus);
 	}
 
 	// Create the application.
@@ -116,9 +117,9 @@ public class App {
 		menu.getAccessibleContext().setAccessibleDescription("Corpus Menu");
 		menuBar.add(menu);
 
-		item1 = new JMenuItem("Select Corpus", KeyEvent.VK_S);
-		item1.setToolTipText("Load a new corpus file into memory.");
-		item1.addActionListener(new ActionListener() {
+		item1_1 = new JMenuItem("Select Corpus", KeyEvent.VK_S);
+		item1_1.setToolTipText("Load a new corpus file into memory.");
+		item1_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				FileFilter filter = new FileNameExtensionFilter(
 						"Corpus Files (*.dat)", "dat");
@@ -130,6 +131,11 @@ public class App {
 					File file = fc.getSelectedFile();
 					try {
 						deserializeCorpus(file.getPath());
+						formerRelevantDocs.clear();
+						formerNonRelevantDocs.clear();
+						queryText = "";
+						tableModel.fireTableChanged(new TableModelEvent(
+								tableModel));
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					} catch (ClassNotFoundException e1) {
@@ -138,7 +144,31 @@ public class App {
 				}
 			}
 		});
-		menu.add(item1);
+		menu.add(item1_1);
+
+		menu2 = new JMenu("Help");
+		menu2.getAccessibleContext().setAccessibleDescription("Help Menu");
+		menuBar.add(menu2);
+
+		item2_1 = new JMenuItem("Contents", KeyEvent.VK_C);
+		item2_1.setToolTipText("Get help on how to use this application.");
+		item2_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				JOptionPane
+						.showMessageDialog(
+								frame,
+								"This application implements a vector space model using normalized tf-idf "
+										+ "weighting and cosine similarity to allow queries on the well-known "
+										+ "Reuters-21578 dataset.\n\nMultiple word phrases may be used in search. To "
+										+ "indicate a phrase, enclose words inside double quotes.\n\nThe Rocchio "
+										+ "Algorithm for relevance feedback is also available. Once a first round of "
+										+ "results has been returned, the user may mark documents as relevant or "
+										+ "non-relevant.\nThe user does this by selecting a listing in the table and "
+										+ "typing 'r' or 'n' to mark the document. The user may also type 'u' to undo "
+										+ "either of the markings made during the current iteration of Rocchio.");
+			}
+		});
+		menu2.add(item2_1);
 
 		// Search Panel
 		searchPanel = new JPanel();
@@ -269,6 +299,7 @@ public class App {
 		corpus = (Corpus) ois.readObject();
 		System.out.println(corpus.getNumDocuments()
 				+ " documents loaded from the corpus.");
+		q = new Query(corpus);
 	}
 
 	private void displayDocument(int docId) {
@@ -282,6 +313,13 @@ public class App {
 	@SuppressWarnings("unchecked")
 	private void search() {
 
+		// Make sure the corpus is loaded into memory.
+		try {
+			q.getClass();
+		} catch (Exception e) {
+			return;
+		}
+
 		// Check to see if losing new feedback information.
 		if (!queryText.equals(textField.getText())
 				&& (!formerRelevantDocs.equals(q.getRelevantDocs()) || !formerNonRelevantDocs
@@ -289,7 +327,8 @@ public class App {
 			int n = JOptionPane
 					.showConfirmDialog(
 							frame,
-							"You have given relevance feedback on the current result set. Do you wish to run a new query and discard the feedback?",
+							"You have given relevance feedback on the current result set. Do you wish to run a new query "
+									+ "and discard the feedback?",
 							"New Query?", JOptionPane.YES_NO_OPTION);
 			if (n != 0)
 				return; // NO
@@ -313,8 +352,13 @@ public class App {
 			if (queryText.equals(textField.getText())) {
 				// If there is no positive feedback (only negative), can't run
 				// Rocchio.
-				if (q.getRelevantDocs().isEmpty())
+				if (q.getRelevantDocs().isEmpty()) {
+					JOptionPane
+							.showMessageDialog(
+									frame,
+									"If there are no relevant documents in the current result set, please try a new query.");
 					return;
+				}
 				q.rocchio();
 			} else {
 				queryText = textField.getText();
@@ -340,7 +384,10 @@ public class App {
 				tableModel.addRow(rowData);
 			}
 			tableModel.fireTableChanged(new TableModelEvent(tableModel));
-			displayDocument((Integer) table.getModel().getValueAt(0, 0));
+			if (docScores.size() > 0)
+				displayDocument((Integer) table.getModel().getValueAt(0, 0));
+			else
+				bodyTextPane.setText("");
 
 			// Store the feedback to test for changes later.
 			formerRelevantDocs = (HashSet<Integer>) q.getRelevantDocs().clone();

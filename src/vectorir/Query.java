@@ -267,18 +267,19 @@ public class Query {
 		// Initialize the vectors for use in the Rocchio algorithm.
 		HashMap<String, Double> relevantDocsVector = new HashMap<String, Double>();
 		HashMap<String, Double> nonRelevantDocsVector = new HashMap<String, Double>();
+		int termsAdded = 0;
 
 		// Expand the query vector by adding (term, 0.0) pairs for all
 		// distinct terms found in relevant documents that are not already a
 		// part of the query vector. Terms already a part of the query vector
 		// keep their weights.
-		// TODO: phrases already in the query vector?
 		for (Integer docId : relevantDocs) {
 			HashMap<String, Double> weights = (HashMap<String, Double>) corpus
 					.getDocument(docId).getWeights();
 			for (String termString : weights.keySet()) {
 				if (!queryVector.containsKey(termString)) {
 					queryVector.put(termString, 0.0);
+					++termsAdded;
 				}
 				// Populate the relevant docs vector with either zero weight if
 				// the term is not already in the vector. Otherwise, add the
@@ -292,6 +293,8 @@ public class Query {
 							relevantDocsVector.get(termString) + wt);
 			}
 		} // end for (Integer docId : relevantDocs)
+
+		System.out.println(termsAdded + " terms added to query. " + queryVector.size() + " total.");
 
 		for (Integer docId : nonRelevantDocs) {
 			HashMap<String, Double> weights = (HashMap<String, Double>) corpus
