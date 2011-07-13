@@ -60,12 +60,10 @@ public class App extends JFrame {
 	private JSplitPane splitPane;
 	private JMenu menu;
 	private JMenuItem item1_1;
+	private JMenu menu2;
+	private JMenuItem item2_1;
 	private JMenuBar menuBar;
 	private final JFileChooser fc = new JFileChooser();
-
-	public final static Cursor busyCursor = Cursor
-			.getPredefinedCursor(Cursor.WAIT_CURSOR);
-	public final static Cursor defaultCursor = Cursor.getDefaultCursor();
 
 	// Search Components
 	private static Corpus corpus;
@@ -73,8 +71,6 @@ public class App extends JFrame {
 	private String queryText = "";
 	private HashSet<Integer> formerRelevantDocs = new HashSet<Integer>();
 	private HashSet<Integer> formerNonRelevantDocs = new HashSet<Integer>();
-	private JMenu menu2;
-	private JMenuItem item2_1;
 
 	// Launch the application.
 	public static void main(String[] args) {
@@ -390,10 +386,13 @@ public class App extends JFrame {
 			// Populate the table.
 			tableModel.getDataVector().removeAllElements();
 			for (Map.Entry<Integer, Double> item : docScores.entrySet()) {
-				Document doc = corpus.getDocument(item.getKey());
-				Object[] rowData = { item.getKey(), doc.getTitle(),
-						item.getValue() };
-				tableModel.addRow(rowData);
+				// No longer display documents marked as non-relevant.
+				if (!q.getNonRelevantDocs().contains(item.getKey())) {
+					Document doc = corpus.getDocument(item.getKey());
+					Object[] rowData = { item.getKey(), doc.getTitle(),
+							item.getValue() };
+					tableModel.addRow(rowData);
+				}
 			}
 			tableModel.fireTableChanged(new TableModelEvent(tableModel));
 			if (docScores.size() > 0)
