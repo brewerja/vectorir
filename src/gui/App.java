@@ -45,34 +45,31 @@ import javax.swing.JTextPane;
 
 public class App {
 
+	// GUI Components
 	private JFrame frame;
 	private JTextField textField;
-	private JButton btnSearch;
+	private JButton buttonSearch;
 	private JPanel searchPanel;
-	private JScrollPane tableScrollPane;
-	private JMenu menu;
-	private JMenuItem item1;
-	private final JFileChooser fc = new JFileChooser();
-
-	private static Corpus corpus;
-	private static Query q;
-	private JMenuBar menuBar;
 	private JTable table;
 	private CustomTableModel tableModel;
+	private MyTableCellRenderer cellRenderer = new MyTableCellRenderer();
+	private JScrollPane tableScrollPane;
 	private JTextPane bodyTextPane;
 	private JScrollPane bodyTextScrollPane;
-	private MyTableCellRenderer cellRenderer = new MyTableCellRenderer();
 	private JSplitPane splitPane;
+	private JMenu menu;
+	private JMenuItem item1;
+	private JMenuBar menuBar;
+	private final JFileChooser fc = new JFileChooser();
+
+	// Search Components
+	private static Corpus corpus;
+	private static Query q;
 	private String queryText = "";
 	private HashSet<Integer> formerRelevantDocs = new HashSet<Integer>();
 	private HashSet<Integer> formerNonRelevantDocs = new HashSet<Integer>();
 
-	/**
-	 * Launch the application.
-	 * 
-	 * @throws IOException
-	 * @throws ClassNotFoundException
-	 */
+	// Launch the application.
 	public static void main(String[] args) throws IOException,
 			ClassNotFoundException {
 		EventQueue.invokeLater(new Runnable() {
@@ -86,31 +83,17 @@ public class App {
 			}
 		});
 
+		// Load the corpus into memory and instantiate a Query object.
 		deserializeCorpus("corpus.dat");
 		q = new Query(corpus);
 	}
 
-	/**
-	 * Create the application.
-	 */
+	// Create the application.
 	public App() {
 		initialize();
 	}
 
-	private static void deserializeCorpus(String file) throws IOException,
-			ClassNotFoundException {
-		// Deserialize the stored Corpus object.
-		System.out.println("Deserializing corpus...");
-		FileInputStream fis = new FileInputStream(file);
-		ObjectInputStream ois = new ObjectInputStream(fis);
-		corpus = (Corpus) ois.readObject();
-		System.out.println(corpus.getNumDocuments()
-				+ " documents loaded from the corpus.");
-	}
-
-	/**
-	 * Initialize the contents of the frame.
-	 */
+	// Initialize the contents of the frame.
 	private void initialize() {
 
 		try {
@@ -133,7 +116,8 @@ public class App {
 		menu.getAccessibleContext().setAccessibleDescription("Corpus Menu");
 		menuBar.add(menu);
 
-		item1 = new JMenuItem("Select Corpus", KeyEvent.VK_T);
+		item1 = new JMenuItem("Select Corpus", KeyEvent.VK_S);
+		item1.setToolTipText("Load a new corpus file into memory.");
 		item1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				FileFilter filter = new FileNameExtensionFilter(
@@ -147,17 +131,13 @@ public class App {
 					try {
 						deserializeCorpus(file.getPath());
 					} catch (IOException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					} catch (ClassNotFoundException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 				}
 			}
 		});
-		item1.getAccessibleContext().setAccessibleDescription(
-				"Load a new corpus file into memory.");
 		menu.add(item1);
 
 		// Search Panel
@@ -172,32 +152,35 @@ public class App {
 			}
 		});
 		textField.setColumns(10);
+		textField.setToolTipText("Enter query here.");
 		searchPanel.add(textField);
 
 		// Search button
-		btnSearch = new JButton("Search");
-		btnSearch.addActionListener(new ActionListener() {
+		buttonSearch = new JButton("Search");
+		buttonSearch.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				search();
 			}
 		});
-		searchPanel.add(btnSearch);
+		buttonSearch.setToolTipText("Search or Refine Search.");
+		searchPanel.add(buttonSearch);
 
 		// JTable
 		Object headers[] = { "Doc ID", "Title", "Score" };
 		tableModel = new CustomTableModel(null, headers);
 		table = new JTable(tableModel);
 
+		// Set the custom cell renderer for coloring of relevance feedback.
 		for (int i = 0; i < 3; i++) {
 			table.getColumnModel().getColumn(i).setCellRenderer(cellRenderer);
 		}
 
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		table.getColumnModel().getColumn(1).setPreferredWidth(550);
-		// table.setAutoCreateRowSorter(false);
 		table.setRowSelectionAllowed(true);
 		table.setColumnSelectionAllowed(false);
 
+		// Display a document selected with the mouse.
 		table.addMouseListener(new java.awt.event.MouseAdapter() {
 			public void mouseClicked(java.awt.event.MouseEvent e) {
 				int row = table.rowAtPoint(e.getPoint());
@@ -205,11 +188,11 @@ public class App {
 			}
 		});
 
+		// React to keystrokes interacting with the result set.
 		table.addKeyListener(new KeyListener() {
 
 			@Override
 			public void keyTyped(KeyEvent e) {
-				// TODO Auto-generated method stub
 			}
 
 			@Override
@@ -220,22 +203,26 @@ public class App {
 				int docId = (Integer) table.getModel().getValueAt(row, 0);
 				char c = e.getKeyChar();
 				if (c == 'r') {
+					// Mark as relevant.
 					q.addRelevantDocs(docId);
 					q.removeNonRelevantDocs(docId);
 					tableModel.fireTableRowsUpdated(row, row);
 				} else if (c == 'n') {
+					// Mark as non-relevant.
 					q.addNonRelevantDocs(docId);
 					q.removeRelevantDocs(docId);
 					tableModel.fireTableRowsUpdated(row, row);
 				} else if (c == 'u') {
+					// Undo relevance feedback provided.
 					q.removeRelevantDocs(docId);
 					q.removeNonRelevantDocs(docId);
 					tableModel.fireTableRowsUpdated(row, row);
 				} else if (c == 'j' && row != table.getRowCount() - 1) {
-					// Move down
+					// Move down.
 					table.setRowSelectionInterval(row + 1, row + 1);
 					docId = (Integer) table.getModel().getValueAt(row + 1, 0);
 				} else if (c == 'k' && row != 0) {
+					// Move up.
 					table.setRowSelectionInterval(row - 1, row - 1);
 					docId = (Integer) table.getModel().getValueAt(row - 1, 0);
 				}
@@ -244,7 +231,6 @@ public class App {
 
 			@Override
 			public void keyPressed(KeyEvent e) {
-				// TODO Auto-generated method stub
 			}
 		});
 
@@ -257,14 +243,20 @@ public class App {
 		// Split Pane
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
 				tableScrollPane, bodyTextScrollPane);
-		// splitPane.setOneTouchExpandable(true);
 		splitPane.setDividerLocation(600);
 		frame.getContentPane().add(splitPane, BorderLayout.CENTER);
-		// Provide minimum sizes for the two components in the split pane
-		// Dimension minimumSize = new Dimension(100, 50);
-		// listScrollPane.setMinimumSize(minimumSize);
-		// pictureScrollPane.setMinimumSize(minimumSize);
 
+	}
+
+	private static void deserializeCorpus(String file) throws IOException,
+			ClassNotFoundException {
+		// Deserialize the stored Corpus object, loading into memory.
+		System.out.println("Deserializing corpus...");
+		FileInputStream fis = new FileInputStream(file);
+		ObjectInputStream ois = new ObjectInputStream(fis);
+		corpus = (Corpus) ois.readObject();
+		System.out.println(corpus.getNumDocuments()
+				+ " documents loaded from the corpus.");
 	}
 
 	private void displayDocument(int docId) {
@@ -280,28 +272,26 @@ public class App {
 
 		// Check to see if losing new feedback information.
 		if (!queryText.equals(textField.getText())
-				&& !formerRelevantDocs.equals(q.getRelevantDocs())
-				&& !formerNonRelevantDocs.equals(q.getNonRelevantDocs())) {
+				&& (!formerRelevantDocs.equals(q.getRelevantDocs()) || !formerNonRelevantDocs
+						.equals(q.getNonRelevantDocs()))) {
 			int n = JOptionPane
 					.showConfirmDialog(
 							frame,
 							"You have given relevance feedback on the current result set. Do you wish to run a new query and discard the feedback?",
 							"New Query?", JOptionPane.YES_NO_OPTION);
-			if (n == 0) { // YES
-				q = new Query(corpus);
-			} else
-				return;
+			if (n != 0)
+				return; // NO
 		}
 
-		// Check for an empty query
+		// Check for an empty query.
 		if (textField.getText().equals(""))
 			return;
-		// Check for an unchanged query, with no new feedback
+		// Check for an unchanged query, with no new feedback.
 		else if (formerRelevantDocs.equals(q.getRelevantDocs())
 				&& formerNonRelevantDocs.equals(q.getNonRelevantDocs())
 				&& queryText.equals(textField.getText()))
 			return;
-		// Either a new query entirely or the same query with new feedback
+		// Either a new query entirely or the same query with new feedback.
 		else {
 			long startTime = System.currentTimeMillis();
 			Map<Integer, Double> docScores = new HashMap<Integer, Double>();
@@ -313,14 +303,12 @@ public class App {
 			} else {
 				queryText = textField.getText();
 				q = new Query(corpus);
-				if (q.prepareQuery(queryText)) {
-					q.executeQuery();
-				}
+				q.prepareQuery(queryText);
+				q.executeQuery();
 			}
-
 			docScores = q.getDocScores();
+
 			// Output the documents in order of similarity to the query.
-			// System.out.println("Results: " + docScores);
 			long stopTime = System.currentTimeMillis();
 			System.out.println(docScores.size() + " results ("
 					+ (stopTime - startTime) / 1000.0 + " seconds)");
@@ -334,12 +322,15 @@ public class App {
 				tableModel.addRow(rowData);
 			}
 			tableModel.fireTableChanged(new TableModelEvent(tableModel));
-			
+
+			// Store the feedback to test for changes later.
 			formerRelevantDocs = (HashSet<Integer>) q.getRelevantDocs().clone();
-			formerNonRelevantDocs = (HashSet<Integer>) q.getNonRelevantDocs().clone();
+			formerNonRelevantDocs = (HashSet<Integer>) q.getNonRelevantDocs()
+					.clone();
 		}
 	}
 
+	// Makes all cells not editable and identifies the types of each column.
 	class CustomTableModel extends DefaultTableModel {
 
 		private static final long serialVersionUID = -4979601734379067486L;
@@ -355,12 +346,12 @@ public class App {
 
 		@Override
 		public boolean isCellEditable(int row, int column) {
-			// all cells false
 			return false;
 		}
 
 	}
 
+	// Make relevant docs green and non-relevant docs red.
 	static class MyTableCellRenderer extends DefaultTableCellRenderer {
 
 		private static final long serialVersionUID = 5464571011029151373L;
