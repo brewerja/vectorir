@@ -1,11 +1,5 @@
 package vectorir;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,58 +16,6 @@ import java.util.Set;
 import vectorir.Term.TermDoc;
 
 public class Query {
-
-	public static void main(String args[]) throws FileNotFoundException,
-			IOException, ClassNotFoundException {
-
-		// Deserialize the stored Corpus object.
-		System.out.println("Deserializing corpus...");
-		FileInputStream fis = new FileInputStream(args[0]);
-		ObjectInputStream ois = new ObjectInputStream(fis);
-		Corpus corpus = (Corpus) ois.readObject();
-		System.out.println(corpus.getNumDocuments()
-				+ " documents loaded from the corpus.");
-
-		// Instantiate a Query on the chosen Corpus.
-		Query q = new Query(corpus);
-		BufferedReader reader;
-
-		// Take in user input until user exits by entering an empty query.
-		while (true) {
-			reader = new BufferedReader(new InputStreamReader(System.in));
-			System.out.print("\nEnter Query: ");
-			String query = reader.readLine();
-			if (query.isEmpty())
-				break;
-
-			long startTime = System.currentTimeMillis();
-
-			if (q.prepareQuery(query)) {
-				q.executeQuery();
-				// Output the documents in order of similarity to the query.
-				System.out.println("Results: " + q.docScores);
-				long stopTime = System.currentTimeMillis();
-				System.out.println(q.docScores.size() + " results ("
-						+ (stopTime - startTime) / 1000.0 + " seconds)");
-			}
-
-			reader = new BufferedReader(new InputStreamReader(System.in));
-			try {
-				System.out.print("Enter Document ID to View: ");
-				Integer docId = Integer.parseInt(reader.readLine());
-				Document retrieved = corpus.getDocument(docId);
-				System.out.println(retrieved.getTitle());
-				System.out.print(retrieved.getDateline());
-				System.out.println(" " + retrieved.getBody());
-			} catch (NumberFormatException e) {
-				System.err.println("Not a valid document ID.");
-			} catch (NullPointerException np) {
-				System.err.println("Document not found.");
-			}
-		}
-		System.out.println("Goodbye.");
-
-	}
 
 	private Corpus corpus;
 	private int numEmptyTokens;
@@ -151,7 +93,6 @@ public class Query {
 
 		final double a = 0.4;
 		double ntf_query = a + (1 - a);
-		
 
 		// For each "true" term, initialize docScores entries for entries in the
 		// term's postings and calculate query tf-idf values.
@@ -251,7 +192,7 @@ public class Query {
 		queryDistance = Math.sqrt(queryDistance);
 		cosineScore();
 	}
-	
+
 	public void cosineScore() {
 		// For each of the documents where a query term is found, calculate it's
 		// cosine similarity to the query vector.
@@ -360,12 +301,12 @@ public class Query {
 				}
 			}
 		} // end for (Integer docId : nonRelevantDocs)
-		
+
 		// Set Rocchio parameters.
 		double alpha = 1.0;
 		double beta = 0.75;
 		double lambda = 0.25;
-		
+
 		for (String termString : queryVector.keySet())
 			queryVector.put(termString, alpha * queryVector.get(termString));
 		for (String termString : relevantDocsVector.keySet())
@@ -376,7 +317,7 @@ public class Query {
 					termString,
 					lambda / nonRelevantDocs.size()
 							* nonRelevantDocsVector.get(termString));
-		
+
 		// Final summation to form the modified queryVector.
 		queryDistance = 0.0;
 		for (String termString : queryVector.keySet()) {
@@ -386,18 +327,19 @@ public class Query {
 			if (value < 0.0)
 				value = 0.0;
 			queryVector.put(termString, value);
-			queryDistance += value*value;
+			queryDistance += value * value;
 		}
 		queryDistance = Math.sqrt(queryDistance);
 		phrasePositions.clear();
-		
+
 		docScores.clear();
 		for (String termString : queryVector.keySet()) {
-			for (Integer docId : corpus.getTerm(termString).getPostings().keySet()) {
+			for (Integer docId : corpus.getTerm(termString).getPostings()
+					.keySet()) {
 				docScores.put(docId, 0.0);
 			}
 		}
-		
+
 		cosineScore();
 	}
 
