@@ -177,7 +177,6 @@ public class Query {
 					docScores.put(docId, 0.0);
 				idf = Math.log(((double) corpus.getNumDocuments())
 						/ (1 + corpus.getTerm(termString).getDocFreq()));
-				// System.out.println(termString + " " + idf);
 			}
 
 			System.out.println("'" + termString + "'" + " found in "
@@ -265,19 +264,25 @@ public class Query {
 	}
 
 	public void rocchio() {
+		// Initialize the vectors for use in the Rocchio algorithm.
 		HashMap<String, Double> relevantDocsVector = new HashMap<String, Double>();
 		HashMap<String, Double> nonRelevantDocsVector = new HashMap<String, Double>();
+
+		// Expand the query vector by adding (term, 0.0) pairs for all
+		// distinct terms found in relevant documents that are not already a
+		// part of the query vector. Terms already a part of the query vector
+		// keep their weights.
+		// TODO: phrases already in the query vector?
 		for (Integer docId : relevantDocs) {
 			HashMap<String, Double> weights = (HashMap<String, Double>) corpus
 					.getDocument(docId).getWeights();
-			// Expand the query vector by adding (term, 0.0) pairs for all
-			// distinct terms found in relevant documents that are not already a
-			// part of the query vector.
-			// TODO: phrases already in the query vector?
 			for (String termString : weights.keySet()) {
 				if (!queryVector.containsKey(termString)) {
 					queryVector.put(termString, 0.0);
 				}
+				// Populate the relevant docs vector with either zero weight if
+				// the term is not already in the vector. Otherwise, add the
+				// weight to the existing term in the vector.
 				Double wt = weights.get(termString);
 				if (!relevantDocsVector.containsKey(termString)) {
 					relevantDocsVector.put(termString, wt);
@@ -287,13 +292,16 @@ public class Query {
 							relevantDocsVector.get(termString) + wt);
 			}
 		} // end for (Integer docId : relevantDocs)
+
 		for (Integer docId : nonRelevantDocs) {
 			HashMap<String, Double> weights = (HashMap<String, Double>) corpus
 					.getDocument(docId).getWeights();
 			for (String termString : weights.keySet()) {
 				// Only get weights and sum weights for terms that appear in the
 				// relevant docs vector, which should have the same terms in it
-				// as the non-relevant docs vector.
+				// as the non-relevant docs vector. Terms that appear only in
+				// non-relevant documents will result in negative weights, which
+				// would be zeroed out anyway.
 				if (nonRelevantDocsVector.containsKey(termString)) {
 					Double wt = weights.get(termString);
 					nonRelevantDocsVector.put(termString,
@@ -307,15 +315,15 @@ public class Query {
 		double beta = 0.75;
 		double lambda = 0.25;
 
+		// Calculate the 3 terms in the formula.
 		for (String termString : queryVector.keySet())
 			queryVector.put(termString, alpha * queryVector.get(termString));
 		for (String termString : relevantDocsVector.keySet())
-			relevantDocsVector.put(termString, beta / relevantDocs.size()
+			relevantDocsVector.put(termString, beta / (1 + relevantDocs.size())
 					* relevantDocsVector.get(termString));
 		for (String termString : nonRelevantDocsVector.keySet())
-			nonRelevantDocsVector.put(
-					termString,
-					lambda / nonRelevantDocs.size()
+			nonRelevantDocsVector.put(termString,
+					lambda / (1 + nonRelevantDocs.size())
 							* nonRelevantDocsVector.get(termString));
 
 		// Final summation to form the modified queryVector.
@@ -333,12 +341,10 @@ public class Query {
 		phrasePositions.clear();
 
 		docScores.clear();
-		for (String termString : queryVector.keySet()) {
+		for (String termString : queryVector.keySet())
 			for (Integer docId : corpus.getTerm(termString).getPostings()
-					.keySet()) {
+					.keySet())
 				docScores.put(docId, 0.0);
-			}
-		}
 
 		cosineScore();
 	}

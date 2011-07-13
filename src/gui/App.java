@@ -202,21 +202,33 @@ public class App {
 					return;
 				int docId = (Integer) table.getModel().getValueAt(row, 0);
 				char c = e.getKeyChar();
+				// Note that once a document marker R or NR has been used in a
+				// Rocchio expanded query, it's R/NR selection cannot be
+				// modified.
 				if (c == 'r') {
 					// Mark as relevant.
-					q.addRelevantDocs(docId);
-					q.removeNonRelevantDocs(docId);
-					tableModel.fireTableRowsUpdated(row, row);
+					if (!formerRelevantDocs.contains(docId)
+							&& !formerNonRelevantDocs.contains(docId)) {
+						q.addRelevantDocs(docId);
+						q.removeNonRelevantDocs(docId);
+						tableModel.fireTableRowsUpdated(row, row);
+					}
 				} else if (c == 'n') {
 					// Mark as non-relevant.
-					q.addNonRelevantDocs(docId);
-					q.removeRelevantDocs(docId);
-					tableModel.fireTableRowsUpdated(row, row);
+					if (!formerRelevantDocs.contains(docId)
+							&& !formerNonRelevantDocs.contains(docId)) {
+						q.addNonRelevantDocs(docId);
+						q.removeRelevantDocs(docId);
+						tableModel.fireTableRowsUpdated(row, row);
+					}
 				} else if (c == 'u') {
 					// Undo relevance feedback provided.
-					q.removeRelevantDocs(docId);
-					q.removeNonRelevantDocs(docId);
-					tableModel.fireTableRowsUpdated(row, row);
+					if (!formerRelevantDocs.contains(docId)
+							&& !formerNonRelevantDocs.contains(docId)) {
+						q.removeRelevantDocs(docId);
+						q.removeNonRelevantDocs(docId);
+						tableModel.fireTableRowsUpdated(row, row);
+					}
 				} else if (c == 'j' && row != table.getRowCount() - 1) {
 					// Move down.
 					table.setRowSelectionInterval(row + 1, row + 1);
@@ -299,6 +311,10 @@ public class App {
 			// If the query is unchanged and has made it this far, it's
 			// feedback, otherwise it's a new query.
 			if (queryText.equals(textField.getText())) {
+				// If there is no positive feedback (only negative), can't run
+				// Rocchio.
+				if (q.getRelevantDocs().isEmpty())
+					return;
 				q.rocchio();
 			} else {
 				queryText = textField.getText();
