@@ -303,8 +303,10 @@ public class App {
 			} else {
 				queryText = textField.getText();
 				q = new Query(corpus);
-				q.prepareQuery(queryText);
-				q.executeQuery();
+				if (q.prepareQuery(queryText))
+					q.executeQuery();
+				else
+					return;
 			}
 			docScores = q.getDocScores();
 
