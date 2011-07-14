@@ -25,6 +25,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.HashMap;
@@ -299,9 +300,13 @@ public class App extends JFrame {
 			ClassNotFoundException {
 		// Deserialize the stored Corpus object, loading into memory.
 		System.out.println("Deserializing corpus...");
+		try {
 		FileInputStream fis = new FileInputStream(file);
 		ObjectInputStream ois = new ObjectInputStream(fis);
 		corpus = (Corpus) ois.readObject();
+		} catch (FileNotFoundException e) {
+			item1_1.doClick();
+		}
 		System.out.println(corpus.getNumDocuments()
 				+ " documents loaded from the corpus.");
 		q = new Query(corpus);
