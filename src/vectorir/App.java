@@ -84,6 +84,8 @@ public class App extends JFrame {
 		setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		try {
 			deserializeCorpus("corpus.dat");
+		} catch (FileNotFoundException e) {
+			item1_1.doClick();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
@@ -123,6 +125,8 @@ public class App extends JFrame {
 				FileFilter filter = new FileNameExtensionFilter(
 						"Corpus Files (*.dat)", "dat");
 				fc.setFileFilter(filter);
+				fc.setToolTipText("Choose a corpus to load into memory.");
+				fc.setDialogTitle("Choose a Corpus");
 
 				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				int returnVal = fc.showOpenDialog(fc);
@@ -297,16 +301,12 @@ public class App extends JFrame {
 	}
 
 	private void deserializeCorpus(String file) throws IOException,
-			ClassNotFoundException {
+			ClassNotFoundException, FileNotFoundException {
 		// Deserialize the stored Corpus object, loading into memory.
 		System.out.println("Deserializing corpus...");
-		try {
 		FileInputStream fis = new FileInputStream(file);
 		ObjectInputStream ois = new ObjectInputStream(fis);
 		corpus = (Corpus) ois.readObject();
-		} catch (FileNotFoundException e) {
-			item1_1.doClick();
-		}
 		System.out.println(corpus.getNumDocuments()
 				+ " documents loaded from the corpus.");
 		q = new Query(corpus);

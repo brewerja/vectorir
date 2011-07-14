@@ -6,3 +6,5 @@ porters-test/
 .classpath
 .project
 .settings/
+*.pdf
+*.tgz
