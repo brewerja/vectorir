@@ -9,13 +9,16 @@ public class Term implements java.io.Serializable {
 	private static final long serialVersionUID = -9215956026571055086L;
 	private int docFreq = 1;
 	private Map<Integer, TermDoc> postings = new HashMap<Integer, TermDoc>();
+	private String string;
 
 	public Term(String term, Document doc, int pos) {
 		postings.put(doc.getId(), new TermDoc(this, doc, pos));
+		this.string = term;
 	}
 
 	public Term(int zero) {
 		this.docFreq = 0;
+		this.string = "";
 	}
 
 	public void foundAgain(Document doc, int pos) {
@@ -36,6 +39,10 @@ public class Term implements java.io.Serializable {
 
 	public Map<Integer, TermDoc> getPostings() {
 		return postings;
+	}
+
+	public String getString() {
+		return string;
 	}
 
 	public class TermDoc implements java.io.Serializable {

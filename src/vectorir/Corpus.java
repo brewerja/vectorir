@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import vectorir.Term.TermDoc;
 
@@ -143,5 +144,54 @@ public class Corpus implements java.io.Serializable {
 
 	public void addTestDoc(Integer doc) {
 		this.testSet.add(doc);
+	}
+
+	public String[] featureSelection(String topic, int k) {
+		int n = trainingSet.size();
+		TreeMap<Double, String> features = new TreeMap<Double, String>();
+
+		// Iterate through all the terms in the vocabulary. The vocabulary of
+		// the training set is a subset of this vocabulary.
+		for (Term term : this.terms.values()) {
+			int n11 = 0, n10 = 0, n00 = 0, n01 = 0;
+			for (Integer id : trainingSet) {
+				if (term.getPostings().containsKey(id)) { // term in doc
+					if (this.getDocument(id).getTopics().contains(topic))
+						n11++;
+					else
+						n10++;
+				} else { // term not in doc
+					if (this.getDocument(id).getTopics().contains(topic))
+						n01++;
+					else
+						n00++;
+				}
+			}
+			// If the term doesn't appear in any of the training documents, skip
+			// it.
+			if (n10 == 0 || n11 == 0)
+				continue;
+
+			double score = 0;
+			score += n11 / (double) n * Math.log(n * n11 / (double) ((n10 + n11) * (n10 + n11)));
+			score += n01 / (double) n * Math.log(n * n01 / (double) ((n00 + n01) * (n10 + n11)));
+			score += n10 / (double) n * Math.log(n * n10 / (double) ((n10 + n11) * (n00 + n01)));
+			score += n00 / (double) n * Math.log(n * n00 / (double) ((n00 + n01) * (n00 + n01)));
+			features.put(score, term.getString());
+		}
+
+//		for (Map.Entry<Double, String> e : features.descendingMap().entrySet()) {
+//			System.out.println(e.getValue() + ":" + e.getKey());
+//		}
+
+		String[] returnFeatures = new String[k];
+		int i = 0;
+		for (String t : features.descendingMap().values()) {
+			returnFeatures[i] = t;
+			++i;
+			if (i == k)
+				break;
+		}
+		return returnFeatures;
 	}
 }

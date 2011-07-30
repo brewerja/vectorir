@@ -40,7 +40,7 @@ public class SimpleParser extends DefaultHandler {
 		System.out.println(handler.corpus.getNumTerms());
 
 		// Serialize the Corpus
-		System.out.println("Serializing Corpus...");
+		System.out.print("Serializing Corpus...");
 		try {
 			FileOutputStream fout = new FileOutputStream("corpus.dat");
 			ObjectOutputStream oos = new ObjectOutputStream(fout);
@@ -49,7 +49,9 @@ public class SimpleParser extends DefaultHandler {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		System.out.println("Done.");
+		System.out.print("Done.\n");
+		
+		handler.corpus.featureSelection("earn", 10);
 
 	}
 
