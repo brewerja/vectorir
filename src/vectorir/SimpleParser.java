@@ -84,7 +84,12 @@ public class SimpleParser extends DefaultHandler {
 		if (qName.equals("REUTERS")) {
 			Integer id = new Integer(atts.getValue("NEWID"));
 			this.currentDocument = new Document(id);
-			System.out.println("DOCID:" + id);
+			String train = atts.getValue("LEWISSPLIT");
+			String topics = atts.getValue("TOPICS");
+			if (train.equals("TRAIN") && topics.equals("YES"))
+				corpus.addTrainingDoc(id);
+			else if (train.equals("TEST") && topics.equals("YES"))
+				corpus.addTestDoc(id);
 		} else if ((qName.equals("TITLE") || qName.equals("DATELINE") || qName.equals("BODY")))
 			this.sb = new StringBuilder();
 		else if (qName.equals("TOPICS"))
@@ -129,6 +134,7 @@ public class SimpleParser extends DefaultHandler {
 
 		} else if (qName.equals("REUTERS")) {
 			this.corpus.addDocument(this.currentDocument);
+			System.out.println("DOCID:" + this.currentDocument.getId());
 			System.out.println("TOPICS:" + this.currentDocument.getTopics());
 			System.out.println("TITLE:" + this.currentDocument.getTitle());
 			System.out.println("DATELINE:" + this.currentDocument.getDateline());

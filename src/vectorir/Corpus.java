@@ -14,6 +14,8 @@ public class Corpus implements java.io.Serializable {
 	private static final long serialVersionUID = 5726961619157084200L;
 	private Map<Integer, Document> documents = new HashMap<Integer, Document>();
 	private Map<String, Term> terms = new HashMap<String, Term>();
+	private ArrayList<Integer> trainingSet = new ArrayList<Integer>();
+	private ArrayList<Integer> testSet = new ArrayList<Integer>();
 
 	// Documents Methods
 	public Document getDocument(Integer key) {
@@ -125,5 +127,21 @@ public class Corpus implements java.io.Serializable {
 
 	public boolean stopWord(String s) {
 		return this.stopWordSet.contains(s);
+	}
+
+	public ArrayList<Integer> getTrainingSet() {
+		return trainingSet;
+	}
+
+	public void addTrainingDoc(Integer doc) {
+		this.trainingSet.add(doc);
+	}
+
+	public ArrayList<Integer> getTestSet() {
+		return testSet;
+	}
+
+	public void addTestDoc(Integer doc) {
+		this.testSet.add(doc);
 	}
 }
