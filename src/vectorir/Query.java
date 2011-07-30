@@ -58,8 +58,7 @@ public class Query {
 					finish = i;
 					// Store the positions of the term starting a phrase in a
 					// Map with the term ending that same phrase.
-					phrasePositions.put(start - numEmptyTokens, finish
-							- numEmptyTokens);
+					phrasePositions.put(start - numEmptyTokens, finish - numEmptyTokens);
 				}
 				queryTokens[i] = queryTokens[i].replace("\"", "");
 			} else if (queryTokens[i].isEmpty()) {
@@ -72,8 +71,8 @@ public class Query {
 		// After iterating though all the tokens, if still in a phrase, there is
 		// a missing quote.
 		if (inPhrase) {
-			System.err.println("SYNTAX ERROR: Unmatched quotation mark in"
-					+ " query OR single word eclosed in quotes.");
+			System.err
+					.println("SYNTAX ERROR: Unmatched quotation mark in" + " query OR single word eclosed in quotes.");
 			return false;
 		} else
 			return true;
@@ -105,17 +104,14 @@ public class Query {
 				// Mash phrase together into one String and find documents that
 				// contain all of the terms.
 				StringBuilder sb = new StringBuilder();
-				Set<Integer> docsWithAllTerms = corpus.getTerm(queryTerms[i])
-						.getPostings().keySet();
+				Set<Integer> docsWithAllTerms = corpus.getTerm(queryTerms[i]).getPostings().keySet();
 				for (int t = i; t < phrasePositions.get(i); t++) {
 					sb.append(queryTerms[t]);
-					docsWithAllTerms.retainAll(corpus
-							.getTerm(queryTerms[t + 1]).getPostings().keySet());
+					docsWithAllTerms.retainAll(corpus.getTerm(queryTerms[t + 1]).getPostings().keySet());
 				}
 				sb.append(queryTerms[phrasePositions.get(i)]);
 				termString = sb.toString();
-				Integer[] docs = docsWithAllTerms
-						.toArray(new Integer[docsWithAllTerms.size()]);
+				Integer[] docs = docsWithAllTerms.toArray(new Integer[docsWithAllTerms.size()]);
 
 				// 3. Examine resulting set of documents one-by-one to determine
 				// if any contain the phrase.
@@ -124,16 +120,14 @@ public class Query {
 					// Retrieve the position lists for each term in the phrase.
 					Map<String, ArrayList<Integer>> positions = new HashMap<String, ArrayList<Integer>>();
 					for (int t = i; t <= phrasePositions.get(i); t++)
-						positions.put(queryTerms[t],
-								corpus.getTerm(queryTerms[t]).getPostings()
-										.get(docId).getPositions());
+						positions.put(queryTerms[t], corpus.getTerm(queryTerms[t]).getPostings().get(docId)
+								.getPositions());
 
 					boolean phraseFoundInDocument = false;
 					for (Integer k : positions.get(queryTerms[i])) {
 						boolean phraseFoundAtThisPosition = true;
 						for (int j = i + 1; j <= phrasePositions.get(i); j++) {
-							if (!positions.get(queryTerms[j]).contains(
-									k + j - i)) {
+							if (!positions.get(queryTerms[j]).contains(k + j - i)) {
 								phraseFoundAtThisPosition = false;
 								break;
 							}
@@ -141,11 +135,9 @@ public class Query {
 						if (phraseFoundAtThisPosition) {
 							phraseFoundInDocument = true;
 							if (!corpus.getTerms().containsKey(termString))
-								corpus.addTerm(termString,
-										corpus.getDocument(docId), k);
+								corpus.addTerm(termString, corpus.getDocument(docId), k);
 							else
-								corpus.getTerm(termString).foundAgain(
-										corpus.getDocument(docId), k);
+								corpus.getTerm(termString).foundAgain(corpus.getDocument(docId), k);
 						}
 					}
 
@@ -157,10 +149,8 @@ public class Query {
 						Term t = corpus.getTerm(termString);
 						TermDoc td = t.getPostings().get(docId);
 
-						double ntf = a + (1 - a) * (double) td.getFreq()
-								/ (double) doc.getMaxTermFreq();
-						idf = Math.log((double) corpus.getNumDocuments()
-								/ (1 + (double) t.getDocFreq()));
+						double ntf = a + (1 - a) * (double) td.getFreq() / (double) doc.getMaxTermFreq();
+						idf = Math.log((double) corpus.getNumDocuments() / (1 + (double) t.getDocFreq()));
 						doc.addWeight(termString, ntf * idf);
 					} else
 						doc.addWeight(termString, 0.0);
@@ -175,13 +165,11 @@ public class Query {
 				Term t = corpus.getTerm(queryTerms[i]);
 				for (Integer docId : t.getPostings().keySet())
 					docScores.put(docId, 0.0);
-				idf = Math.log(((double) corpus.getNumDocuments())
-						/ (1 + corpus.getTerm(termString).getDocFreq()));
+				idf = Math.log(((double) corpus.getNumDocuments()) / (1 + corpus.getTerm(termString).getDocFreq()));
 			}
 
-			System.out.println("'" + termString + "'" + " found in "
-					+ corpus.getTerm(termString).getDocFreq() + " documents: "
-					+ corpus.getTerm(termString).getPostings().keySet());
+			System.out.println("'" + termString + "'" + " found in " + corpus.getTerm(termString).getDocFreq()
+					+ " documents: " + corpus.getTerm(termString).getPostings().keySet());
 			weight = ntf_query * idf;
 
 			queryVector.put(termString, weight);
@@ -199,11 +187,9 @@ public class Query {
 			double dotproduct = 0.0;
 			for (String term : queryVector.keySet()) {
 				if (corpus.getTerm(term).getPostings().containsKey(docId))
-					dotproduct += queryVector.get(term)
-							* corpus.getDocument(docId).getWeight(term);
+					dotproduct += queryVector.get(term) * corpus.getDocument(docId).getWeight(term);
 			}
-			double cosineSim = dotproduct
-					/ (corpus.getDocument(docId).getEuclideanDistance() * queryDistance);
+			double cosineSim = dotproduct / (corpus.getDocument(docId).getEuclideanDistance() * queryDistance);
 			docScores.put(docId, cosineSim);
 		}
 
@@ -212,28 +198,20 @@ public class Query {
 	}
 
 	private static Map<Integer, Double> sortByValue(Map<Integer, Double> map) {
-		List<Map.Entry<Integer, Double>> list = new LinkedList<Map.Entry<Integer, Double>>(
-				map.entrySet());
+		List<Map.Entry<Integer, Double>> list = new LinkedList<Map.Entry<Integer, Double>>(map.entrySet());
 
-		Collections.sort(list, Collections
-				.reverseOrder(new Comparator<Map.Entry<Integer, Double>>() {
-					public int compare(Map.Entry<Integer, Double> o1,
-							Map.Entry<Integer, Double> o2) {
-						return ((Comparable<Double>) ((Map.Entry<Integer, Double>) (o1))
-								.getValue())
-								.compareTo(((Map.Entry<Integer, Double>) (o2))
-										.getValue());
-					}
-				}));
+		Collections.sort(list, Collections.reverseOrder(new Comparator<Map.Entry<Integer, Double>>() {
+			public int compare(Map.Entry<Integer, Double> o1, Map.Entry<Integer, Double> o2) {
+				return ((Comparable<Double>) ((Map.Entry<Integer, Double>) (o1)).getValue())
+						.compareTo(((Map.Entry<Integer, Double>) (o2)).getValue());
+			}
+		}));
 
 		Map<Integer, Double> result = new LinkedHashMap<Integer, Double>();
-		for (Iterator<Map.Entry<Integer, Double>> it = list.iterator(); it
-				.hasNext();) {
-			Map.Entry<Integer, Double> entry = (Map.Entry<Integer, Double>) it
-					.next();
+		for (Iterator<Map.Entry<Integer, Double>> it = list.iterator(); it.hasNext();) {
+			Map.Entry<Integer, Double> entry = (Map.Entry<Integer, Double>) it.next();
 			DecimalFormat twoDForm = new DecimalFormat("#.##");
-			result.put(entry.getKey(),
-					Double.valueOf(twoDForm.format(entry.getValue())));
+			result.put(entry.getKey(), Double.valueOf(twoDForm.format(entry.getValue())));
 		}
 
 		return result;
@@ -274,8 +252,7 @@ public class Query {
 		// part of the query vector. Terms already a part of the query vector
 		// keep their weights.
 		for (Integer docId : relevantDocs) {
-			HashMap<String, Double> weights = (HashMap<String, Double>) corpus
-					.getDocument(docId).getWeights();
+			HashMap<String, Double> weights = (HashMap<String, Double>) corpus.getDocument(docId).getWeights();
 			for (String termString : weights.keySet()) {
 				if (!queryVector.containsKey(termString)) {
 					queryVector.put(termString, 0.0);
@@ -289,16 +266,14 @@ public class Query {
 					relevantDocsVector.put(termString, wt);
 					nonRelevantDocsVector.put(termString, 0.0);
 				} else
-					relevantDocsVector.put(termString,
-							relevantDocsVector.get(termString) + wt);
+					relevantDocsVector.put(termString, relevantDocsVector.get(termString) + wt);
 			}
 		} // end for (Integer docId : relevantDocs)
 
 		System.out.println(termsAdded + " terms added to query. " + queryVector.size() + " total.");
 
 		for (Integer docId : nonRelevantDocs) {
-			HashMap<String, Double> weights = (HashMap<String, Double>) corpus
-					.getDocument(docId).getWeights();
+			HashMap<String, Double> weights = (HashMap<String, Double>) corpus.getDocument(docId).getWeights();
 			for (String termString : weights.keySet()) {
 				// Only get weights and sum weights for terms that appear in the
 				// relevant docs vector, which should have the same terms in it
@@ -307,8 +282,7 @@ public class Query {
 				// would be zeroed out anyway.
 				if (nonRelevantDocsVector.containsKey(termString)) {
 					Double wt = weights.get(termString);
-					nonRelevantDocsVector.put(termString,
-							nonRelevantDocsVector.get(termString) + wt);
+					nonRelevantDocsVector.put(termString, nonRelevantDocsVector.get(termString) + wt);
 				}
 			}
 		} // end for (Integer docId : nonRelevantDocs)
@@ -322,18 +296,15 @@ public class Query {
 		for (String termString : queryVector.keySet())
 			queryVector.put(termString, alpha * queryVector.get(termString));
 		for (String termString : relevantDocsVector.keySet())
-			relevantDocsVector.put(termString, beta / (1 + relevantDocs.size())
-					* relevantDocsVector.get(termString));
+			relevantDocsVector.put(termString, beta / (1 + relevantDocs.size()) * relevantDocsVector.get(termString));
 		for (String termString : nonRelevantDocsVector.keySet())
 			nonRelevantDocsVector.put(termString,
-					lambda / (1 + nonRelevantDocs.size())
-							* nonRelevantDocsVector.get(termString));
+					lambda / (1 + nonRelevantDocs.size()) * nonRelevantDocsVector.get(termString));
 
 		// Final summation to form the modified queryVector.
 		queryDistance = 0.0;
 		for (String termString : queryVector.keySet()) {
-			double value = queryVector.get(termString)
-					+ relevantDocsVector.get(termString)
+			double value = queryVector.get(termString) + relevantDocsVector.get(termString)
 					- nonRelevantDocsVector.get(termString);
 			if (value < 0.0)
 				value = 0.0;
@@ -345,8 +316,7 @@ public class Query {
 
 		docScores.clear();
 		for (String termString : queryVector.keySet())
-			for (Integer docId : corpus.getTerm(termString).getPostings()
-					.keySet())
+			for (Integer docId : corpus.getTerm(termString).getPostings().keySet())
 				docScores.put(docId, 0.0);
 
 		cosineScore();

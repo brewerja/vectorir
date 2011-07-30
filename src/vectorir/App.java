@@ -98,8 +98,7 @@ public class App extends JFrame {
 	private void initialize() {
 
 		try {
-			UIManager
-					.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -122,8 +121,7 @@ public class App extends JFrame {
 		item1_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 
-				FileFilter filter = new FileNameExtensionFilter(
-						"Corpus Files (*.dat)", "dat");
+				FileFilter filter = new FileNameExtensionFilter("Corpus Files (*.dat)", "dat");
 				fc.setFileFilter(filter);
 				fc.setToolTipText("Choose a corpus to load into memory.");
 				fc.setDialogTitle("Choose a Corpus");
@@ -139,8 +137,7 @@ public class App extends JFrame {
 						formerRelevantDocs.clear();
 						formerNonRelevantDocs.clear();
 						queryText = "";
-						tableModel.fireTableChanged(new TableModelEvent(
-								tableModel));
+						tableModel.fireTableChanged(new TableModelEvent(tableModel));
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					} catch (ClassNotFoundException e1) {
@@ -160,18 +157,16 @@ public class App extends JFrame {
 		item2_1.setToolTipText("Get help on how to use this application.");
 		item2_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				JOptionPane
-						.showMessageDialog(
-								App.this,
-								"This application implements a vector space model using normalized tf-idf "
-										+ "weighting and cosine similarity to allow queries on the well-known "
-										+ "Reuters-21578 dataset.\n\nMultiple word phrases may be used in search. To "
-										+ "indicate a phrase, enclose words inside double quotes.\n\nThe Rocchio "
-										+ "Algorithm for relevance feedback is also available. Once a first round of "
-										+ "results has been returned, the user may mark documents as relevant or "
-										+ "non-relevant.\nThe user does this by selecting a listing in the table and "
-										+ "typing 'r' or 'n' to mark the document. The user may also type 'u' to undo "
-										+ "either of the markings made during the current iteration of Rocchio.");
+				JOptionPane.showMessageDialog(App.this,
+						"This application implements a vector space model using normalized tf-idf "
+								+ "weighting and cosine similarity to allow queries on the well-known "
+								+ "Reuters-21578 dataset.\n\nMultiple word phrases may be used in search. To "
+								+ "indicate a phrase, enclose words inside double quotes.\n\nThe Rocchio "
+								+ "Algorithm for relevance feedback is also available. Once a first round of "
+								+ "results has been returned, the user may mark documents as relevant or "
+								+ "non-relevant.\nThe user does this by selecting a listing in the table and "
+								+ "typing 'r' or 'n' to mark the document. The user may also type 'u' to undo "
+								+ "either of the markings made during the current iteration of Rocchio.");
 			}
 		});
 		menu2.add(item2_1);
@@ -243,24 +238,21 @@ public class App extends JFrame {
 				// modified.
 				if (c == 'r') {
 					// Mark as relevant.
-					if (!formerRelevantDocs.contains(docId)
-							&& !formerNonRelevantDocs.contains(docId)) {
+					if (!formerRelevantDocs.contains(docId) && !formerNonRelevantDocs.contains(docId)) {
 						q.addRelevantDocs(docId);
 						q.removeNonRelevantDocs(docId);
 						tableModel.fireTableRowsUpdated(row, row);
 					}
 				} else if (c == 'n') {
 					// Mark as non-relevant.
-					if (!formerRelevantDocs.contains(docId)
-							&& !formerNonRelevantDocs.contains(docId)) {
+					if (!formerRelevantDocs.contains(docId) && !formerNonRelevantDocs.contains(docId)) {
 						q.addNonRelevantDocs(docId);
 						q.removeRelevantDocs(docId);
 						tableModel.fireTableRowsUpdated(row, row);
 					}
 				} else if (c == 'u') {
 					// Undo relevance feedback provided.
-					if (!formerRelevantDocs.contains(docId)
-							&& !formerNonRelevantDocs.contains(docId)) {
+					if (!formerRelevantDocs.contains(docId) && !formerNonRelevantDocs.contains(docId)) {
 						q.removeRelevantDocs(docId);
 						q.removeNonRelevantDocs(docId);
 						tableModel.fireTableRowsUpdated(row, row);
@@ -293,22 +285,19 @@ public class App extends JFrame {
 		bodyTextScrollPane = new JScrollPane(bodyTextPane);
 
 		// Split Pane
-		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-				tableScrollPane, bodyTextScrollPane);
+		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tableScrollPane, bodyTextScrollPane);
 		splitPane.setDividerLocation(600);
 		getContentPane().add(splitPane, BorderLayout.CENTER);
 
 	}
 
-	private void deserializeCorpus(String file) throws IOException,
-			ClassNotFoundException, FileNotFoundException {
+	private void deserializeCorpus(String file) throws IOException, ClassNotFoundException, FileNotFoundException {
 		// Deserialize the stored Corpus object, loading into memory.
 		System.out.println("Deserializing corpus...");
 		FileInputStream fis = new FileInputStream(file);
 		ObjectInputStream ois = new ObjectInputStream(fis);
 		corpus = (Corpus) ois.readObject();
-		System.out.println(corpus.getNumDocuments()
-				+ " documents loaded from the corpus.");
+		System.out.println(corpus.getNumDocuments() + " documents loaded from the corpus.");
 		q = new Query(corpus);
 	}
 
@@ -332,14 +321,11 @@ public class App extends JFrame {
 
 		// Check to see if losing new feedback information.
 		if (!queryText.equals(textField.getText())
-				&& (!formerRelevantDocs.equals(q.getRelevantDocs()) || !formerNonRelevantDocs
-						.equals(q.getNonRelevantDocs()))) {
-			int n = JOptionPane
-					.showConfirmDialog(
-							App.this,
-							"You have given relevance feedback on the current result set. Do you wish to run a new query "
-									+ "and discard the feedback?",
-							"New Query?", JOptionPane.YES_NO_OPTION);
+				&& (!formerRelevantDocs.equals(q.getRelevantDocs()) || !formerNonRelevantDocs.equals(q
+						.getNonRelevantDocs()))) {
+			int n = JOptionPane.showConfirmDialog(App.this,
+					"You have given relevance feedback on the current result set. Do you wish to run a new query "
+							+ "and discard the feedback?", "New Query?", JOptionPane.YES_NO_OPTION);
 			if (n != 0)
 				return; // NO
 		}
@@ -348,8 +334,7 @@ public class App extends JFrame {
 		if (textField.getText().equals(""))
 			return;
 		// Check for an unchanged query, with no new feedback.
-		else if (formerRelevantDocs.equals(q.getRelevantDocs())
-				&& formerNonRelevantDocs.equals(q.getNonRelevantDocs())
+		else if (formerRelevantDocs.equals(q.getRelevantDocs()) && formerNonRelevantDocs.equals(q.getNonRelevantDocs())
 				&& queryText.equals(textField.getText()))
 			return;
 		// Either a new query entirely or the same query with new feedback.
@@ -363,10 +348,8 @@ public class App extends JFrame {
 				// If there is no positive feedback (only negative), can't run
 				// Rocchio.
 				if (q.getRelevantDocs().isEmpty()) {
-					JOptionPane
-							.showMessageDialog(
-									App.this,
-									"If there are no relevant documents in the current result set, please try a new query.");
+					JOptionPane.showMessageDialog(App.this,
+							"If there are no relevant documents in the current result set, please try a new query.");
 					return;
 				}
 				q.rocchio();
@@ -382,8 +365,7 @@ public class App extends JFrame {
 
 			// Output the documents in order of similarity to the query.
 			long stopTime = System.currentTimeMillis();
-			System.out.println(docScores.size() + " results ("
-					+ (stopTime - startTime) / 1000.0 + " seconds)");
+			System.out.println(docScores.size() + " results (" + (stopTime - startTime) / 1000.0 + " seconds)");
 
 			// Populate the table.
 			tableModel.getDataVector().removeAllElements();
@@ -391,8 +373,7 @@ public class App extends JFrame {
 				// No longer display documents marked as non-relevant.
 				if (!q.getNonRelevantDocs().contains(item.getKey())) {
 					Document doc = corpus.getDocument(item.getKey());
-					Object[] rowData = { item.getKey(), doc.getTitle(),
-							item.getValue() };
+					Object[] rowData = { item.getKey(), doc.getTitle(), item.getValue() };
 					tableModel.addRow(rowData);
 				}
 			}
@@ -404,8 +385,7 @@ public class App extends JFrame {
 
 			// Store the feedback to test for changes later.
 			formerRelevantDocs = (HashSet<Integer>) q.getRelevantDocs().clone();
-			formerNonRelevantDocs = (HashSet<Integer>) q.getNonRelevantDocs()
-					.clone();
+			formerNonRelevantDocs = (HashSet<Integer>) q.getNonRelevantDocs().clone();
 		}
 	}
 
@@ -436,11 +416,9 @@ public class App extends JFrame {
 		private static final long serialVersionUID = 5464571011029151373L;
 
 		@Override
-		public Component getTableCellRendererComponent(JTable table,
-				Object value, boolean isSelected, boolean hasFocus, int row,
-				int column) {
-			Component c = super.getTableCellRendererComponent(table, value,
-					isSelected, hasFocus, row, column);
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+				boolean hasFocus, int row, int column) {
+			Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
 			int docId = (Integer) table.getModel().getValueAt(row, 0);
 

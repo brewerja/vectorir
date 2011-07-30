@@ -76,8 +76,7 @@ public class SimpleParser extends DefaultHandler {
 		System.out.println(corpus.getNumDocuments() + " Document objects");
 	}
 
-	public void startElement(String uri, String name, String qName,
-			Attributes atts) {
+	public void startElement(String uri, String name, String qName, Attributes atts) {
 
 		this.currentTag = qName;
 
@@ -85,8 +84,7 @@ public class SimpleParser extends DefaultHandler {
 			Integer id = new Integer(atts.getValue("NEWID"));
 			this.currentDocument = new Document(id);
 			System.out.println("DOCID:" + id);
-		} else if ((qName.equals("TITLE") || qName.equals("DATELINE") || qName
-				.equals("BODY")))
+		} else if ((qName.equals("TITLE") || qName.equals("DATELINE") || qName.equals("BODY")))
 			this.sb = new StringBuilder();
 	}
 
@@ -96,10 +94,11 @@ public class SimpleParser extends DefaultHandler {
 		else if (qName.equals("DATELINE"))
 			this.currentDocument.setDateline(sb.toString().trim());
 		else if (qName.equals("BODY")) {
-			// Remove excess white space and chop anything after the final period.
+			// Remove excess white space and chop anything after the final
+			// period.
 			String bodyText = sb.toString().replaceAll("\\s+", " ");
 			this.currentDocument.setBody(bodyText.substring(0, bodyText.lastIndexOf(".") + 1));
-			
+
 			String[] tokens = sb.toString()
 			// Replace all dashes and slashes with white space.
 					.replaceAll("[\\-\\/]", " ")
@@ -114,7 +113,7 @@ public class SimpleParser extends DefaultHandler {
 			ArrayList<String> tokenList = new ArrayList<String>();
 			for (String s : tokens) {
 				// if (!corpus.stopWord(s))
-					tokenList.add(s);
+				tokenList.add(s);
 			}
 
 			this.currentDocument.setTokens(tokenList);
@@ -122,8 +121,7 @@ public class SimpleParser extends DefaultHandler {
 		} else if (qName.equals("REUTERS")) {
 			this.corpus.addDocument(this.currentDocument);
 			System.out.println("TITLE:" + this.currentDocument.getTitle());
-			System.out
-					.println("DATELINE:" + this.currentDocument.getDateline());
+			System.out.println("DATELINE:" + this.currentDocument.getDateline());
 			System.out.println("BODY:" + this.currentDocument.getBody());
 			System.out.print("TOKENS:");
 			for (String s : this.currentDocument.getTokens())
@@ -133,9 +131,7 @@ public class SimpleParser extends DefaultHandler {
 	}
 
 	public void characters(char ch[], int start, int length) {
-		if (!(this.currentTag.equals("TITLE")
-				|| this.currentTag.equals("DATELINE") || this.currentTag
-					.equals("BODY")))
+		if (!(this.currentTag.equals("TITLE") || this.currentTag.equals("DATELINE") || this.currentTag.equals("BODY")))
 			return;
 
 		for (int i = start; i < start + length; i++) {
