@@ -15,6 +15,7 @@ public class Document implements java.io.Serializable {
 	private Map<String, Double> weights = new HashMap<String, Double>();
 	private double euclideanDistance;
 	private int maxTermFrequency = 0;
+	private ArrayList<String> topics = new ArrayList<String>();
 
 	public Document(int id) {
 		this.id = id;
@@ -94,6 +95,14 @@ public class Document implements java.io.Serializable {
 
 	public Map<String, Double> getWeights() {
 		return weights;
+	}
+
+	public ArrayList<String> getTopics() {
+		return topics;
+	}
+
+	public void addTopic(String topic) {
+		this.topics.add(topic);
 	}
 
 }

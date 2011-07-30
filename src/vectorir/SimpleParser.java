@@ -57,6 +57,7 @@ public class SimpleParser extends DefaultHandler {
 	private String currentTag;
 	private Document currentDocument;
 	private StringBuilder sb;
+	private String category = null;
 
 	public SimpleParser() {
 		super();
@@ -86,10 +87,18 @@ public class SimpleParser extends DefaultHandler {
 			System.out.println("DOCID:" + id);
 		} else if ((qName.equals("TITLE") || qName.equals("DATELINE") || qName.equals("BODY")))
 			this.sb = new StringBuilder();
+		else if (qName.equals("TOPICS"))
+			this.category = qName;
+		else if (qName.equals("D") && this.category != null)
+			this.sb = new StringBuilder();
 	}
 
 	public void endElement(String uri, String name, String qName) {
-		if (qName.equals("TITLE"))
+		if (qName.equals("TOPICS"))
+			this.category = null;
+		else if (qName.equals("D") && this.category != null)
+			this.currentDocument.addTopic(sb.toString().trim());
+		else if (qName.equals("TITLE"))
 			this.currentDocument.setTitle(sb.toString().trim());
 		else if (qName.equals("DATELINE"))
 			this.currentDocument.setDateline(sb.toString().trim());
@@ -120,6 +129,7 @@ public class SimpleParser extends DefaultHandler {
 
 		} else if (qName.equals("REUTERS")) {
 			this.corpus.addDocument(this.currentDocument);
+			System.out.println("TOPICS:" + this.currentDocument.getTopics());
 			System.out.println("TITLE:" + this.currentDocument.getTitle());
 			System.out.println("DATELINE:" + this.currentDocument.getDateline());
 			System.out.println("BODY:" + this.currentDocument.getBody());
@@ -131,7 +141,9 @@ public class SimpleParser extends DefaultHandler {
 	}
 
 	public void characters(char ch[], int start, int length) {
-		if (!(this.currentTag.equals("TITLE") || this.currentTag.equals("DATELINE") || this.currentTag.equals("BODY")))
+		String t = this.currentTag;
+		// Only store text from these tags:
+		if (!(t.equals("TITLE") || t.equals("DATELINE") || t.equals("BODY") || (t.equals("D") && (this.category != null))))
 			return;
 
 		for (int i = start; i < start + length; i++) {
