@@ -1,8 +1,6 @@
 package vectorir;
 
-import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -15,10 +13,10 @@ import org.xml.sax.helpers.DefaultHandler;
 // Modeled after the SAX Quickstart found at:
 // http://sax.sourceforge.net/quickstart.html
 
-public class SimpleParser extends DefaultHandler {
+public class ParseForCategorization extends DefaultHandler {
 
 	public static void main(String args[]) throws Exception {
-		SimpleParser handler = new SimpleParser();
+		ParseForCategorization handler = new ParseForCategorization();
 		XMLReader xr = XMLReaderFactory.createXMLReader();
 		xr.setContentHandler(handler);
 		xr.setErrorHandler(handler);
@@ -35,24 +33,7 @@ public class SimpleParser extends DefaultHandler {
 		// Clear out token stores to save space.
 		handler.corpus.clearTokens();
 
-		// For each <document, term> pair, calculate weights (tf-idf).
-		handler.corpus.calculateTermWeights();
-
-		System.out.println(handler.corpus.getNumTerms());
-
-		// Serialize the Corpus
-		System.out.print("Serializing Corpus...");
-		try {
-			FileOutputStream fout = new FileOutputStream("corpus.dat");
-			ObjectOutputStream oos = new ObjectOutputStream(fout);
-			oos.writeObject(handler.corpus);
-			oos.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		System.out.print("Done.\n");
-		
-		String[] features = handler.corpus.featureSelection("earn", 6);
+		String[] features = handler.corpus.featureSelection("earn", 10);
 		Map<Integer, Boolean> marked = handler.corpus.testCategorization("earn", features);
 		handler.corpus.getStats("earn", marked);
 	}
@@ -63,7 +44,7 @@ public class SimpleParser extends DefaultHandler {
 	private StringBuilder sb;
 	private String category = null;
 
-	public SimpleParser() {
+	public ParseForCategorization() {
 		super();
 
 	}
@@ -115,7 +96,7 @@ public class SimpleParser extends DefaultHandler {
 			// Remove excess white space and chop anything after the final
 			// period.
 			String bodyText = sb.toString().replaceAll("\\s+", " ");
-			this.currentDocument.setBody(bodyText.substring(0, bodyText.lastIndexOf(".") + 1));
+			this.currentDocument.setBody(bodyText);//.substring(0, bodyText.lastIndexOf(".") + 1));
 
 			String[] tokens = sb.toString()
 			// Replace all dashes and slashes with white space.
@@ -130,8 +111,8 @@ public class SimpleParser extends DefaultHandler {
 			// Eliminate stop words.
 			ArrayList<String> tokenList = new ArrayList<String>();
 			for (String s : tokens) {
-				// if (!corpus.stopWord(s))
-				tokenList.add(s);
+				if (!corpus.stopWord(s))
+					tokenList.add(s);
 			}
 
 			this.currentDocument.setTokens(tokenList);
@@ -139,14 +120,14 @@ public class SimpleParser extends DefaultHandler {
 		} else if (qName.equals("REUTERS")) {
 			this.corpus.addDocument(this.currentDocument);
 			System.out.println("DOCID:" + this.currentDocument.getId());
-			System.out.println("TOPICS:" + this.currentDocument.getTopics());
-			System.out.println("TITLE:" + this.currentDocument.getTitle());
-			System.out.println("DATELINE:" + this.currentDocument.getDateline());
-			System.out.println("BODY:" + this.currentDocument.getBody());
-			System.out.print("TOKENS:");
-			for (String s : this.currentDocument.getTokens())
-				System.out.print(s + ",");
-			System.out.println("\n");
+//			System.out.println("TOPICS:" + this.currentDocument.getTopics());
+//			System.out.println("TITLE:" + this.currentDocument.getTitle());
+//			System.out.println("DATELINE:" + this.currentDocument.getDateline());
+//			System.out.println("BODY:" + this.currentDocument.getBody());
+//			System.out.print("TOKENS:");
+//			for (String s : this.currentDocument.getTokens())
+//				System.out.print(s + ",");
+//			System.out.println("\n");
 		}
 	}
 

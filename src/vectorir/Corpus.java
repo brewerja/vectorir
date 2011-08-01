@@ -2,11 +2,14 @@ package vectorir;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import vectorir.Term.TermDoc;
 
@@ -71,9 +74,9 @@ public class Corpus implements java.io.Serializable {
 			}
 		}
 
-		for (String stem : terms.keySet())
-			System.out.print(stem + ",");
-		System.out.println("\nTerms:" + terms.size());
+		// for (String stem : terms.keySet())
+		// System.out.print(stem + ",");
+		// System.out.println("\nTerms:" + terms.size());
 	}
 
 	public void calculateTermWeights() {
@@ -148,7 +151,8 @@ public class Corpus implements java.io.Serializable {
 
 	public String[] featureSelection(String topic, int k) {
 		int n = trainingSet.size();
-		TreeMap<Double, String> features = new TreeMap<Double, String>();
+		HashMap<String, Double> features = new HashMap<String, Double>();
+		TreeMap<String, Double> sorted_features = new TreeMap<String, Double>(new ValueComparator(features));
 
 		// Iterate through all the terms in the vocabulary. The vocabulary of
 		// the training set is a subset of this vocabulary.
@@ -167,31 +171,140 @@ public class Corpus implements java.io.Serializable {
 						n00++;
 				}
 			}
-			// If the term doesn't appear in any of the training documents, skip
-			// it.
-			if (n10 == 0 || n11 == 0)
+			// If the term doesn't appear in any training documents, skip it.
+			if (n10 == 0 && n11 == 0)
 				continue;
 
 			double score = 0;
-			score += n11 / (double) n * Math.log(n * n11 / (double) ((n10 + n11) * (n10 + n11)));
-			score += n01 / (double) n * Math.log(n * n01 / (double) ((n00 + n01) * (n10 + n11)));
-			score += n10 / (double) n * Math.log(n * n10 / (double) ((n10 + n11) * (n00 + n01)));
-			score += n00 / (double) n * Math.log(n * n00 / (double) ((n00 + n01) * (n00 + n01)));
-			features.put(score, term.getString());
+			score += (n11 > 0 ? n11 / (double) n * Math.log(n * n11 / (double) ((n10 + n11) * (n10 + n11))) : 0);
+			score += (n01 > 0 ? n01 / (double) n * Math.log(n * n01 / (double) ((n00 + n01) * (n10 + n11))) : 0);
+			score += (n10 > 0 ? n10 / (double) n * Math.log(n * n10 / (double) ((n00 + n01) * (n10 + n11))) : 0);
+			score += (n00 > 0 ? n00 / (double) n * Math.log(n * n00 / (double) ((n00 + n01) * (n00 + n01))) : 0);
+			features.put(term.getString(), score);
 		}
 
-//		for (Map.Entry<Double, String> e : features.descendingMap().entrySet()) {
-//			System.out.println(e.getValue() + ":" + e.getKey());
-//		}
+		sorted_features.putAll(features);
+
+		for (Map.Entry<String, Double> e : sorted_features.entrySet())
+			System.out.println(e.getValue() + ":" + e.getKey());
 
 		String[] returnFeatures = new String[k];
 		int i = 0;
-		for (String t : features.descendingMap().values()) {
+		for (String t : sorted_features.keySet()) {
 			returnFeatures[i] = t;
 			++i;
 			if (i == k)
 				break;
 		}
 		return returnFeatures;
+	}
+
+	public Map<Integer, Boolean> testCategorization(String topic, String[] features) {
+		int n = trainingSet.size(); // Count docs.
+
+		// Count docs in class.
+		int nc = 0;
+		for (Integer id : trainingSet) {
+			boolean inClass = this.getDocument(id).getTopics().contains(topic);
+			if (inClass)
+				nc++;
+		}
+
+		double prior_c = nc / (double) n;
+		double prior_cbar = (n - nc) / (double) n;
+
+		Map<String, Double> condProb_c = new HashMap<String, Double>();
+		Map<String, Double> condProb_cbar = new HashMap<String, Double>();
+
+		// Count docs in class containing term.
+		for (String term : features) {
+			Set<Integer> postings = terms.get(term).getPostings().keySet();
+			int nct_c = 0, nct_cbar = 0;
+			for (Integer id : trainingSet) {
+				boolean inClass = this.getDocument(id).getTopics().contains(topic);
+				if (postings.contains(id)) {
+					if (inClass)
+						nct_c++;
+					else
+						nct_cbar++;
+				}
+			}
+			// And calculate conditional probabilities.
+			condProb_c.put(term, (nct_c + 1) / (double) (nc + 2));
+			condProb_cbar.put(term, (nct_cbar + 1) / (double) ((n - nc) + 2));
+		}
+
+		// ---APPLY BERNOULLI----
+
+		Map<Integer, Boolean> marked = new HashMap<Integer, Boolean>();
+		for (Integer id : testSet) {
+			double score_c = Math.log(prior_c);
+			double score_cbar = Math.log(prior_cbar);
+			for (String term : features) {
+				Set<Integer> postings = terms.get(term).getPostings().keySet();
+				if (postings.contains(id)) {
+					score_c += Math.log(condProb_c.get(term));
+					score_cbar += Math.log(condProb_cbar.get(term));
+				} else {
+					score_c += Math.log(1 - condProb_c.get(term));
+					score_cbar += Math.log(1 - condProb_cbar.get(term));
+				}
+			}
+			if (score_c > score_cbar)
+				marked.put(id, true);
+			else
+				marked.put(id, false);
+		}
+		return marked;
+	}
+
+	public void getStats(String topic, Map<Integer, Boolean> marked) {
+		System.out.println("Test Set Size: " + marked.size());
+		int tp = 0, tn = 0, fp = 0, fn = 0;
+		for (Map.Entry<Integer, Boolean> e : marked.entrySet()) {
+			Integer id = e.getKey();
+			boolean actuallyInClass = this.getDocument(id).getTopics().contains(topic);
+			boolean meThinksInClass = e.getValue();
+			if (actuallyInClass) {
+				if (meThinksInClass)
+					tp++;
+				else
+					fn++;
+			} else {
+				if (meThinksInClass)
+					fp++;
+				else
+					tn++;
+			}
+		}
+		System.out.println("TP:" + tp);
+		System.out.println("TN:" + tn);
+		System.out.println("FP:" + fp);
+		System.out.println("FN:" + fn);
+
+		double precision = tp / (double) (tp + fp);
+		double recall = tp / (double) (tp + fn);
+		double f1 = 2 * precision * recall / (precision + recall);
+		System.out.println("F1:" + f1*100);
+	}
+
+	class ValueComparator implements Comparator {
+
+		Map<String, Double> base;
+
+		public ValueComparator(Map<String, Double> base) {
+			this.base = base;
+		}
+
+		public int compare(Object a, Object b) {
+
+			if (base.get(a) < base.get(b)) {
+				return 1;
+			} else if (base.get(a) == base.get(b)) {
+				return 0;
+			} else {
+				return -1;
+			}
+		}
 	}
 }
