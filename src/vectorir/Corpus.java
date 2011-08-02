@@ -7,10 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
-
 import vectorir.Term.TermDoc;
 
 public class Corpus implements java.io.Serializable {
@@ -66,17 +63,12 @@ public class Corpus implements java.io.Serializable {
 				String stem = stemmer.toString();
 				// The stem is added to the overall corpus set of terms if it
 				// has not already been added.
-				if (terms.containsKey(stem)) {
+				if (terms.containsKey(stem))
 					terms.get(stem).foundAgain(doc, i);
-				} else {
+				else
 					terms.put(stem, new Term(stem, doc, i));
-				}
 			}
 		}
-
-		// for (String stem : terms.keySet())
-		// System.out.print(stem + ",");
-		// System.out.println("\nTerms:" + terms.size());
 	}
 
 	public void calculateTermWeights() {
@@ -125,7 +117,9 @@ public class Corpus implements java.io.Serializable {
 			"wants", "was", "wasnt", "we", "wed", "well", "were", "were", "werent", "what", "whatd", "whats", "when",
 			"when", "whend", "whenll", "whens", "where", "whered", "wherell", "wheres", "which", "while", "who",
 			"whod", "wholl", "whos", "whom", "why", "whyd", "whyll", "whys", "will", "with", "wont", "would",
-			"wouldve", "wouldnt", "yet", "you", "youd", "youll", "youre", "youve", "your", "reuter" };
+			"wouldve", "wouldnt", "yet", "you", "youd", "youll", "youre", "youve", "your", "reuter", "th", "la", "ltd",
+			"mln", "dlr", "year", "pct", "dlrs", "company", "inc", "corp", "net", "vs", "ct", "cts", "share", "price",
+			"last", "on", "two", "on", "note", "billion", "new", "market" };
 
 	private Set<String> stopWordSet = new HashSet<String>(Arrays.asList(stopStrings));
 
@@ -157,7 +151,7 @@ public class Corpus implements java.io.Serializable {
 		// Iterate through all the terms in the vocabulary. The vocabulary of
 		// the training set is a subset of this vocabulary.
 		for (Term term : this.terms.values()) {
-			int n11 = 0, n10 = 0, n00 = 0, n01 = 0;
+			int n11 = 1, n10 = 1, n00 = 1, n01 = 1;
 			for (Integer id : trainingSet) {
 				if (term.getPostings().containsKey(id)) { // term in doc
 					if (this.getDocument(id).getTopics().contains(topic))
@@ -171,22 +165,25 @@ public class Corpus implements java.io.Serializable {
 						n00++;
 				}
 			}
-			// If the term doesn't appear in any training documents, skip it.
-			if (n10 == 0 && n11 == 0)
-				continue;
+
+			int n1dot = n10 + n11;
+			int ndot1 = n01 + n11;
+			int n0dot = n00 + n01;
+			int ndot0 = n00 + n10;
 
 			double score = 0;
-			score += (n11 > 0 ? n11 / (double) n * Math.log(n * n11 / (double) ((n10 + n11) * (n10 + n11))) : 0);
-			score += (n01 > 0 ? n01 / (double) n * Math.log(n * n01 / (double) ((n00 + n01) * (n10 + n11))) : 0);
-			score += (n10 > 0 ? n10 / (double) n * Math.log(n * n10 / (double) ((n00 + n01) * (n10 + n11))) : 0);
-			score += (n00 > 0 ? n00 / (double) n * Math.log(n * n00 / (double) ((n00 + n01) * (n00 + n01))) : 0);
+			score += n11 / (double) n * Math.log(n * n11 / (double) (n1dot * ndot1));
+			score += n01 / (double) n * Math.log(n * n01 / (double) (n0dot * ndot1));
+			score += n10 / (double) n * Math.log(n * n10 / (double) (n1dot * ndot0));
+			score += n00 / (double) n * Math.log(n * n00 / (double) (n0dot * ndot0));
+
 			features.put(term.getString(), score);
 		}
 
 		sorted_features.putAll(features);
 
-		for (Map.Entry<String, Double> e : sorted_features.entrySet())
-			System.out.println(e.getValue() + ":" + e.getKey());
+//		for (Map.Entry<String, Double> e : sorted_features.entrySet())
+//			System.out.println(e.getValue() + ":" + e.getKey());
 
 		String[] returnFeatures = new String[k];
 		int i = 0;
@@ -200,6 +197,10 @@ public class Corpus implements java.io.Serializable {
 	}
 
 	public Map<Integer, Boolean> testCategorization(String topic, String[] features) {
+		System.out.println("---TERMS---");
+		for (String term : features)
+			System.out.println(term);
+
 		int n = trainingSet.size(); // Count docs.
 
 		// Count docs in class.
@@ -222,7 +223,7 @@ public class Corpus implements java.io.Serializable {
 			int nct_c = 0, nct_cbar = 0;
 			for (Integer id : trainingSet) {
 				boolean inClass = this.getDocument(id).getTopics().contains(topic);
-				if (postings.contains(id)) {
+				if (postings.contains(id)) { // document contains the term
 					if (inClass)
 						nct_c++;
 					else
@@ -285,10 +286,10 @@ public class Corpus implements java.io.Serializable {
 		double precision = tp / (double) (tp + fp);
 		double recall = tp / (double) (tp + fn);
 		double f1 = 2 * precision * recall / (precision + recall);
-		System.out.println("F1:" + f1*100);
+		System.out.println("F1:" + f1 * 100);
 	}
 
-	class ValueComparator implements Comparator {
+	class ValueComparator implements Comparator<Object> {
 
 		Map<String, Double> base;
 

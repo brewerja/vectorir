@@ -33,9 +33,10 @@ public class ParseForCategorization extends DefaultHandler {
 		// Clear out token stores to save space.
 		handler.corpus.clearTokens();
 
-		String[] features = handler.corpus.featureSelection("earn", 10);
-		Map<Integer, Boolean> marked = handler.corpus.testCategorization("earn", features);
-		handler.corpus.getStats("earn", marked);
+		String topic = "earn";
+		String[] features = handler.corpus.featureSelection(topic, 25);
+		Map<Integer, Boolean> marked = handler.corpus.testCategorization(topic, features);
+		handler.corpus.getStats(topic, marked);
 	}
 
 	private Corpus corpus = new Corpus();
@@ -43,10 +44,10 @@ public class ParseForCategorization extends DefaultHandler {
 	private Document currentDocument;
 	private StringBuilder sb;
 	private String category = null;
+	private boolean storeDoc = false;
 
 	public ParseForCategorization() {
 		super();
-
 	}
 
 	// //////////////////////////////////////////////////////////////////
@@ -71,10 +72,14 @@ public class ParseForCategorization extends DefaultHandler {
 			this.currentDocument = new Document(id);
 			String train = atts.getValue("LEWISSPLIT");
 			String topics = atts.getValue("TOPICS");
-			if (train.equals("TRAIN") && topics.equals("YES"))
+			if (train.equals("TRAIN") && topics.equals("YES")) {
 				corpus.addTrainingDoc(id);
-			else if (train.equals("TEST") && topics.equals("YES"))
+				storeDoc = true;
+			} else if (train.equals("TEST") && topics.equals("YES")) {
 				corpus.addTestDoc(id);
+				storeDoc = true;
+			} else
+				storeDoc = false;
 		} else if ((qName.equals("TITLE") || qName.equals("DATELINE") || qName.equals("BODY")))
 			this.sb = new StringBuilder();
 		else if (qName.equals("TOPICS"))
@@ -93,10 +98,11 @@ public class ParseForCategorization extends DefaultHandler {
 		else if (qName.equals("DATELINE"))
 			this.currentDocument.setDateline(sb.toString().trim());
 		else if (qName.equals("BODY")) {
-			// Remove excess white space and chop anything after the final
-			// period.
+			// Remove excess white space.
+			String title = this.currentDocument.getTitle();
+			sb.append(" " + title);
 			String bodyText = sb.toString().replaceAll("\\s+", " ");
-			this.currentDocument.setBody(bodyText);//.substring(0, bodyText.lastIndexOf(".") + 1));
+			this.currentDocument.setBody(bodyText);
 
 			String[] tokens = sb.toString()
 			// Replace all dashes and slashes with white space.
@@ -118,8 +124,9 @@ public class ParseForCategorization extends DefaultHandler {
 			this.currentDocument.setTokens(tokenList);
 
 		} else if (qName.equals("REUTERS")) {
-			this.corpus.addDocument(this.currentDocument);
-			System.out.println("DOCID:" + this.currentDocument.getId());
+			if (storeDoc)
+				this.corpus.addDocument(this.currentDocument);
+//			System.out.println("DOCID:" + this.currentDocument.getId());
 //			System.out.println("TOPICS:" + this.currentDocument.getTopics());
 //			System.out.println("TITLE:" + this.currentDocument.getTitle());
 //			System.out.println("DATELINE:" + this.currentDocument.getDateline());
