@@ -148,8 +148,7 @@ public class Corpus implements java.io.Serializable {
 		HashMap<String, Double> features = new HashMap<String, Double>();
 		TreeMap<String, Double> sorted_features = new TreeMap<String, Double>(new ValueComparator(features));
 
-		// Iterate through all the terms in the vocabulary. The vocabulary of
-		// the training set is a subset of this vocabulary.
+		// Iterate through all the terms in the vocabulary.
 		for (Term term : this.terms.values()) {
 			int n11 = 1, n10 = 1, n00 = 1, n01 = 1;
 			for (Integer id : trainingSet) {

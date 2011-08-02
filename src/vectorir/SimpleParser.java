@@ -37,10 +37,10 @@ public class SimpleParser extends DefaultHandler {
 		// For each <document, term> pair, calculate weights (tf-idf).
 		handler.corpus.calculateTermWeights();
 
-		System.out.println(handler.corpus.getNumTerms());
+		System.out.println(handler.corpus.getNumTerms() + " Distinct terms");
 
 		// Serialize the Corpus
-		System.out.println("Serializing Corpus...");
+		System.out.print("Serializing Corpus...");
 		try {
 			FileOutputStream fout = new FileOutputStream("corpus.dat");
 			ObjectOutputStream oos = new ObjectOutputStream(fout);
@@ -49,7 +49,7 @@ public class SimpleParser extends DefaultHandler {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		System.out.println("Done.");
+		System.out.print("Done.\n");
 
 	}
 
