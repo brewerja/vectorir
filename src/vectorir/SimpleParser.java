@@ -4,7 +4,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
-import java.util.Map;
 
 import org.xml.sax.XMLReader;
 import org.xml.sax.Attributes;
@@ -41,7 +40,7 @@ public class SimpleParser extends DefaultHandler {
 		System.out.println(handler.corpus.getNumTerms());
 
 		// Serialize the Corpus
-		System.out.print("Serializing Corpus...");
+		System.out.println("Serializing Corpus...");
 		try {
 			FileOutputStream fout = new FileOutputStream("corpus.dat");
 			ObjectOutputStream oos = new ObjectOutputStream(fout);
@@ -50,18 +49,14 @@ public class SimpleParser extends DefaultHandler {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		System.out.print("Done.\n");
-		
-		String[] features = handler.corpus.featureSelection("earn", 6);
-		Map<Integer, Boolean> marked = handler.corpus.testCategorization("earn", features);
-		handler.corpus.getStats("earn", marked);
+		System.out.println("Done.");
+
 	}
 
 	private Corpus corpus = new Corpus();
 	private String currentTag;
 	private Document currentDocument;
 	private StringBuilder sb;
-	private String category = null;
 
 	public SimpleParser() {
 		super();
@@ -88,26 +83,13 @@ public class SimpleParser extends DefaultHandler {
 		if (qName.equals("REUTERS")) {
 			Integer id = new Integer(atts.getValue("NEWID"));
 			this.currentDocument = new Document(id);
-			String train = atts.getValue("LEWISSPLIT");
-			String topics = atts.getValue("TOPICS");
-			if (train.equals("TRAIN") && topics.equals("YES"))
-				corpus.addTrainingDoc(id);
-			else if (train.equals("TEST") && topics.equals("YES"))
-				corpus.addTestDoc(id);
+			System.out.println("DOCID:" + id);
 		} else if ((qName.equals("TITLE") || qName.equals("DATELINE") || qName.equals("BODY")))
-			this.sb = new StringBuilder();
-		else if (qName.equals("TOPICS"))
-			this.category = qName;
-		else if (qName.equals("D") && this.category != null)
 			this.sb = new StringBuilder();
 	}
 
 	public void endElement(String uri, String name, String qName) {
-		if (qName.equals("TOPICS"))
-			this.category = null;
-		else if (qName.equals("D") && this.category != null)
-			this.currentDocument.addTopic(sb.toString().trim());
-		else if (qName.equals("TITLE"))
+		if (qName.equals("TITLE"))
 			this.currentDocument.setTitle(sb.toString().trim());
 		else if (qName.equals("DATELINE"))
 			this.currentDocument.setDateline(sb.toString().trim());
@@ -138,8 +120,6 @@ public class SimpleParser extends DefaultHandler {
 
 		} else if (qName.equals("REUTERS")) {
 			this.corpus.addDocument(this.currentDocument);
-			System.out.println("DOCID:" + this.currentDocument.getId());
-			System.out.println("TOPICS:" + this.currentDocument.getTopics());
 			System.out.println("TITLE:" + this.currentDocument.getTitle());
 			System.out.println("DATELINE:" + this.currentDocument.getDateline());
 			System.out.println("BODY:" + this.currentDocument.getBody());
@@ -151,9 +131,7 @@ public class SimpleParser extends DefaultHandler {
 	}
 
 	public void characters(char ch[], int start, int length) {
-		String t = this.currentTag;
-		// Only store text from these tags:
-		if (!(t.equals("TITLE") || t.equals("DATELINE") || t.equals("BODY") || (t.equals("D") && (this.category != null))))
+		if (!(this.currentTag.equals("TITLE") || this.currentTag.equals("DATELINE") || this.currentTag.equals("BODY")))
 			return;
 
 		for (int i = start; i < start + length; i++) {
