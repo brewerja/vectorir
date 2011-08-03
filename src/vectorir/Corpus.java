@@ -117,9 +117,7 @@ public class Corpus implements java.io.Serializable {
 			"wants", "was", "wasnt", "we", "wed", "well", "were", "were", "werent", "what", "whatd", "whats", "when",
 			"when", "whend", "whenll", "whens", "where", "whered", "wherell", "wheres", "which", "while", "who",
 			"whod", "wholl", "whos", "whom", "why", "whyd", "whyll", "whys", "will", "with", "wont", "would",
-			"wouldve", "wouldnt", "yet", "you", "youd", "youll", "youre", "youve", "your", "reuter", "th", "la", "ltd",
-			"mln", "dlr", "year", "pct", "dlrs", "company", "inc", "corp", "net", "vs", "ct", "cts", "share", "price",
-			"last", "on", "two", "on", "note", "billion", "new", "market" };
+			"wouldve", "wouldnt", "yet", "you", "youd", "youll", "youre", "youve", "your", "reuter" };
 
 	private Set<String> stopWordSet = new HashSet<String>(Arrays.asList(stopStrings));
 
@@ -181,8 +179,8 @@ public class Corpus implements java.io.Serializable {
 
 		sorted_features.putAll(features);
 
-//		for (Map.Entry<String, Double> e : sorted_features.entrySet())
-//			System.out.println(e.getValue() + ":" + e.getKey());
+		// for (Map.Entry<String, Double> e : sorted_features.entrySet())
+		// System.out.println(e.getValue() + ":" + e.getKey());
 
 		String[] returnFeatures = new String[k];
 		int i = 0;
@@ -196,9 +194,9 @@ public class Corpus implements java.io.Serializable {
 	}
 
 	public Map<Integer, Boolean> testCategorization(String topic, String[] features) {
-		System.out.println("---TERMS---");
-		for (String term : features)
-			System.out.println(term);
+		// System.out.println("---TERMS---");
+		// for (String term : features)
+		// System.out.println(term);
 
 		int n = trainingSet.size(); // Count docs.
 
@@ -258,8 +256,8 @@ public class Corpus implements java.io.Serializable {
 		return marked;
 	}
 
-	public void getStats(String topic, Map<Integer, Boolean> marked) {
-		System.out.println("Test Set Size: " + marked.size());
+	public int[] getStats(String topic, Map<Integer, Boolean> marked) {
+		// System.out.println("Test Set Size: " + marked.size());
 		int tp = 0, tn = 0, fp = 0, fn = 0;
 		for (Map.Entry<Integer, Boolean> e : marked.entrySet()) {
 			Integer id = e.getKey();
@@ -277,15 +275,18 @@ public class Corpus implements java.io.Serializable {
 					tn++;
 			}
 		}
-		System.out.println("TP:" + tp);
-		System.out.println("TN:" + tn);
-		System.out.println("FP:" + fp);
-		System.out.println("FN:" + fn);
+		// System.out.println("TP:" + tp);
+		// System.out.println("TN:" + tn);
+		// System.out.println("FP:" + fp);
+		// System.out.println("FN:" + fn);
 
 		double precision = tp / (double) (tp + fp);
 		double recall = tp / (double) (tp + fn);
 		double f1 = 2 * precision * recall / (precision + recall);
 		System.out.println("F1:" + f1 * 100);
+
+		int[] stats = { tp, tn, fp, fn };
+		return stats;
 	}
 
 	class ValueComparator implements Comparator<Object> {

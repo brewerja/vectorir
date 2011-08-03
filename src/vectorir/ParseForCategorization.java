@@ -33,10 +33,70 @@ public class ParseForCategorization extends DefaultHandler {
 		// Clear out token stores to save space.
 		handler.corpus.clearTokens();
 
-		String topic = "earn";
-		String[] features = handler.corpus.featureSelection(topic, 25);
-		Map<Integer, Boolean> marked = handler.corpus.testCategorization(topic, features);
-		handler.corpus.getStats(topic, marked);
+		// Select topic to categorize on.
+		// String topic = "interest";
+
+		// Feature selection.
+		// String[] features = handler.corpus.featureSelection(topic, 50);
+
+		// Apply Bernoulli Model.
+		// Map<Integer, Boolean> marked =
+		// handler.corpus.testCategorization(topic, features);
+
+		// Print results.
+		// handler.corpus.getStats(topic, marked);
+		
+		// -----------------BATCH RESULTS--------------------
+
+		String[] topics = { "earn", "acq", "money-fx", "grain", "crude", "trade", "interest", "ship", "wheat", "corn" };
+		ArrayList<int[]> statsList = new ArrayList<int[]>();
+		for (String topic : topics) {
+			System.out.println("Topic: " + topic);
+			String[] features = handler.corpus.featureSelection(topic, 50);
+			Map<Integer, Boolean> marked = handler.corpus.testCategorization(topic, features);
+			int[] stats = handler.corpus.getStats(topic, marked);
+			statsList.add(stats);
+		}
+
+		double recTotal = 0, precTotal = 0, f1Total = 0;
+		double[] totals = { 0, 0, 0, 0 };
+		for (int[] s : statsList) { // s = {tp, tn, fp, fn};
+			double prec = s[0] / (double) (s[0] + s[2]); // tp / (tp + fp)
+			precTotal += prec;
+			double rec = s[0] / (double) (s[0] + s[3]); // tp / (tp + fn)
+			recTotal += rec;
+			double f1 = 2 * prec * rec / (prec + rec);
+			f1Total += f1;
+			for (int i = 0; i < 4; ++i)
+				totals[i] += s[i];
+			System.out.println("prec:" + Math.round(100 * prec) + ", rec:" + Math.round(100 * rec) + ", f1:"
+					+ Math.round(100 * f1));
+		}
+
+		int macroPrec = (int) Math.round(100 * precTotal / topics.length);
+		int macroRec = (int) Math.round(100 * recTotal / topics.length);
+		int macroF1 = (int) Math.round(100 * f1Total / topics.length);
+		System.out.println("Macroaveraged Precision: " + macroPrec);
+		System.out.println("Macroaveraged Recall: " + macroRec);
+		System.out.println("Macroaveraged F1: " + macroF1);
+
+		int microPrec = (int) Math.round(100 * totals[0] / (totals[0] + totals[2]));
+		int microRec = (int) Math.round(100 * totals[0] / (totals[0] + totals[3]));
+		int microF1 = (int) Math.round(2 * microPrec * microRec / (microPrec + microRec));
+		System.out.println("Microaveraged Precision: " + microPrec);
+		System.out.println("Microaveraged Recall: " + microRec);
+		System.out.println("Microaveraged F1: " + microF1);
+
+		// topic = "corn";
+		// int[] no_f = {1, 10, 50, 100, 150, 200, 300};
+		// for (int x : no_f) {
+		// System.out.println("FEATURES: " + x);
+		// String[] features = handler.corpus.featureSelection(topic, x);
+		// Map<Integer, Boolean> marked =
+		// handler.corpus.testCategorization(topic, features);
+		// handler.corpus.getStats(topic, marked);
+		// }
+
 	}
 
 	private Corpus corpus = new Corpus();
@@ -126,15 +186,16 @@ public class ParseForCategorization extends DefaultHandler {
 		} else if (qName.equals("REUTERS")) {
 			if (storeDoc)
 				this.corpus.addDocument(this.currentDocument);
-//			System.out.println("DOCID:" + this.currentDocument.getId());
-//			System.out.println("TOPICS:" + this.currentDocument.getTopics());
-//			System.out.println("TITLE:" + this.currentDocument.getTitle());
-//			System.out.println("DATELINE:" + this.currentDocument.getDateline());
-//			System.out.println("BODY:" + this.currentDocument.getBody());
-//			System.out.print("TOKENS:");
-//			for (String s : this.currentDocument.getTokens())
-//				System.out.print(s + ",");
-//			System.out.println("\n");
+			// System.out.println("DOCID:" + this.currentDocument.getId());
+			// System.out.println("TOPICS:" + this.currentDocument.getTopics());
+			// System.out.println("TITLE:" + this.currentDocument.getTitle());
+			// System.out.println("DATELINE:" +
+			// this.currentDocument.getDateline());
+			// System.out.println("BODY:" + this.currentDocument.getBody());
+			// System.out.print("TOKENS:");
+			// for (String s : this.currentDocument.getTokens())
+			// System.out.print(s + ",");
+			// System.out.println("\n");
 		}
 	}
 
